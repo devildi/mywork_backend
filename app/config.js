@@ -1,6 +1,7 @@
 module.exports = {
 	port: 4000,
 	secret: 'DavinciUser',
+	authority: '41538bc6dd',
 	f1: function(str1, str2){
 		let index = str1.split('|').indexOf(str2)
 		if(index > -1){

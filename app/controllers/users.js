@@ -1,14 +1,18 @@
 const jsonwebtoken = require('jsonwebtoken');
 const User = require('../models/users');
-const { secret } = require('../config');
+const { secret, authority } = require('../config');
 
 class UsersCtl {
 	async create(ctx){
     ctx.verifyParams({
       name: { type: 'string', required: true },
       password: { type: 'string', required: true },
+      auth: { type: 'string', required: true }
     });
-    const { name } = ctx.request.body;
+    const { name, auth} = ctx.request.body;
+    if(auth !== authority){
+      ctx.throw(401, '未授权');
+    }
     const repeatedUser = await User.findOne({ name });
     if (repeatedUser) {
       ctx.body = '此工号已经注册，请直接登录！'
