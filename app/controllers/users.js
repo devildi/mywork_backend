@@ -7,12 +7,12 @@ class UsersCtl {
     ctx.verifyParams({
       name: { type: 'string', required: true },
       password: { type: 'string', required: true },
-      auth: { type: 'string', required: true }
+      //auth: { type: 'string', required: true }
     });
-    const { name, auth} = ctx.request.body;
-    if(auth !== authority){
-      ctx.throw(401, '未授权');
-    }
+    const { name } = ctx.request.body;
+    // if(auth !== authority){
+    //   ctx.throw(401, '未授权');
+    // }
     const repeatedUser = await User.findOne({ name });
     if (repeatedUser) {
       ctx.body = '此工号已经注册，请直接登录！'
