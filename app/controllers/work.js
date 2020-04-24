@@ -27,6 +27,7 @@ class WorkCtl {
     //获取全部有数据用户：
     const worksAll = await Work.find().populate('whose')
     let allUsers = await User.find()
+    let allUsersClone = [...allUsers]
     let filterUser = []
     for(let i = 0; i < allUsers.length; i++){
 
@@ -34,17 +35,22 @@ class WorkCtl {
         return item.whose.name === allUsers[i].name
       })) 
     }
-    filterUser.forEach(function(i, index){
-      if(i.length === 0){
-        allUsers.splice(index, 1)
+    // filterUser.forEach(function(i, index){
+    //   if(i.length === 0){
+    //     allUsers.splice(index, 1)
+    //   }
+    // })
+    for(let i = filterUser.length - 1; i >= 0; i--){
+      if(filterUser[i].length === 0){
+        allUsersClone.splice(i, 1)
       }
-    })
+    }
     //获取7天数据：图表
     let obj = {
       name: '',
     }
-    for(let i = 0; i < allUsers.length; i++){
-      obj[allUsers[i].name] = 0
+    for(let i = 0; i < allUsersClone.length; i++){
+      obj[allUsersClone[i].name] = 0
     }
     let chartArray = []
     let tasks = []
@@ -69,6 +75,9 @@ class WorkCtl {
         output.push(Object.assign({}, obj, {name: chartArray[i]}))
       }
     }
+
+    output = Object.keys(output[0]).length === 1 ? null : output
+
     //分页获取全部数据：表格
     const perPage = 30 * allUsers.length
     const page = parseInt(ctx.query.page) || 1
@@ -80,7 +89,9 @@ class WorkCtl {
       arrWork1 = works.filter(function(item){
         return item.whose.name === allUsers[i].name
       })
-      arrWork.push(arrWork1)
+      if(arrWork1.length){
+        arrWork.push(arrWork1)
+      }
     }
 
     ctx.body = {
