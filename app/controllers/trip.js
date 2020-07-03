@@ -1,5 +1,5 @@
 const Trip = require('../models/trip');
-const Detail = require('../models/detail');
+const Item = require('../models/item');
 
 class TripCtl {
 	async create(ctx){
@@ -13,6 +13,12 @@ class TripCtl {
 			let trip2 = await new Trip(trip).save()
 			ctx.body = trip2
 		}
+	}
+
+	async createItem(ctx){
+		const item = ctx.request.body
+		let newItem = await new Item(item).save()
+		ctx.body = newItem
 	}
 
 	async get(ctx){
