@@ -17,14 +17,46 @@ class TripCtl {
 
 	async createItem(ctx){
 		const item = ctx.request.body
-		let newItem = await new Item(item).save()
-		ctx.body = newItem
+		const {articleURL} = item
+		const article = await Item.findOne({articleURL: articleURL})
+		console.log(article)
+		if(!article){
+			let newItem = await new Item(item).save()
+			ctx.body = newItem
+		} else {
+			ctx.body = null
+		}
 	}
 
 	async get(ctx){
 		const uid = ctx.request.query.uid
 		const trip = await Trip.findOne({ uid: uid });
 		ctx.body = trip;
+	}
+
+	async getAllTrip(ctx){
+		const perPage = 8
+		const uid = ctx.request.query.uid
+		const page = ctx.request.query.page || 1
+		const trips = await Trip.find().limit(page * perPage)
+		if(uid){
+			let newArray = trips.filter(function(i){
+				return i.uid == uid
+			})
+			let newArray1 = trips.filter(function(i){
+				return i.uid != uid
+			})
+			ctx.body = [...newArray, ...newArray1];
+		} else {
+			ctx.body = trips;
+		}
+	}
+
+	async getAllStory(ctx){
+		const perPage = 8
+		const page = ctx.request.query.page || 1
+		const items = await Item.find().sort({"_id":-1}).limit(page * perPage)
+		ctx.body = items;
 	}
 }
 

@@ -6,6 +6,7 @@ const tripSchema = new Schema({
 	uid: { type: String, required: true },
 	tripName: { type: String, required: true},
 	designer: { type: String, required: true},
+	domestic: {type: Number, required: true},
 	detail: []
 })
 

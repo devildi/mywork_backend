@@ -7,5 +7,4 @@ const itemSchema = new Schema({
 	picURL: { type: String, required: true},
 	articleURL: { type: String, required: true}
 })
-
 module.exports = model('Item', itemSchema);
