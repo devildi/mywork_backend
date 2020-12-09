@@ -1,5 +1,6 @@
 const jsonwebtoken = require('jsonwebtoken');
 const User = require('../models/users');
+const Client = require('../models/client')
 const { secret, authority } = require('../config');
 
 class UsersCtl {
@@ -40,6 +41,16 @@ class UsersCtl {
   async logout(ctx){
     ctx.state.user = null
     ctx.body = {user: null};
+  }
+
+  async newClient(ctx){
+    const newClient = await new Client(ctx.request.body).save()
+    ctx.body = JSON.stringify(newClient)
+  }
+
+  async getClient(ctx){
+    const allClients = await Client.find({}).sort({"_id":-1})
+    ctx.body = allClients
   }
 }
 
