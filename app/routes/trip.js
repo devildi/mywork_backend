@@ -10,13 +10,15 @@ const {
 	createItem,
 	get,
 	getAllStory,
-	getAllTrip
+	getAllTrip,
+	getDescriptedTrip
 } = require('../controllers/trip');
 
 router.post('/new', create);
 router.post('/newItem', createItem);
 router.get('/get', get);
 router.get('/getAllTrip', getAllTrip);
+router.get('/getDescriptedTrip', getDescriptedTrip);
 router.get('/getAllStory', getAllStory)
 
 module.exports = router;

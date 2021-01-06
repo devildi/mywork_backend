@@ -52,6 +52,18 @@ class TripCtl {
 		}
 	}
 
+	async getDescriptedTrip(ctx){
+		const tag = ctx.request.query.description
+		const trips = await Trip.find({
+			$or : [
+				{city: tag},
+				{country: tag},
+				{tags: {$regex : tag}}
+			]
+		})
+		ctx.body = trips;
+	}
+
 	async getAllStory(ctx){
 		const perPage = 8
 		const page = ctx.request.query.page || 1

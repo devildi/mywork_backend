@@ -7,6 +7,9 @@ const tripSchema = new Schema({
 	tripName: { type: String, required: true},
 	designer: { type: String, required: true},
 	domestic: {type: Number, required: true},
+	city: { type: String, required: true},
+	country: { type: String, required: true},
+	tags: { type: String},
 	detail: []
 })
 
