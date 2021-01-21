@@ -1,3 +1,5 @@
+const nodemailer = require("nodemailer");
+
 module.exports = {
 	port: 4000,
 	secret: 'DavinciUser',
@@ -12,14 +14,35 @@ module.exports = {
 	},
 	h0: function(timestamp = Date.now()){
 		const target = new Date(timestamp);
-	  target.setHours(0);
-	  target.setMinutes(0);
-	  target.setSeconds(0);
-	  target.setMilliseconds(0);
-	  return target.getTime();
+		target.setHours(0);
+		target.setMinutes(0);
+		target.setSeconds(0);
+		target.setMilliseconds(0);
+		return target.getTime();
 	},
 	d0: function(gap, timestamp = Date.now()){
 		const target = new Date(timestamp);
 		return target.setDate(target.getDate() - gap);
+	},
+	sendMail: async function(){
+		//let testAccount = await nodemailer.createTestAccount();
+		let transporter = nodemailer.createTransport({
+			host: "smtp.qq.email",
+			port: 587,
+			secure: true, // true for 465, false for other ports
+			auth: {
+				user: '387694318@qq.com', // generated ethereal user
+				pass: 'rndmoeapxgztcbca', // generated ethereal password
+			},
+		});
+		let info = await transporter.sendMail({
+			from: '"Fred Foo 👻" <foo@example.com>', // sender address
+			to: "bar@example.com, baz@example.com", // list of receivers
+			subject: "Hello ✔", // Subject line
+			text: "Hello world?", // plain text body
+			html: "<b>Hello world?</b>", // html body
+		});
+    	console.log("Message sent: %s", info.messageId);
+    	console.log("Preview URL: %s", nodemailer.getTestMessageUrl(info));
 	}
 };

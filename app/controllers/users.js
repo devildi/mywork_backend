@@ -1,7 +1,7 @@
 const jsonwebtoken = require('jsonwebtoken');
 const User = require('../models/users');
 const Client = require('../models/client')
-const { secret, authority } = require('../config');
+const { secret, authority, sendMail } = require('../config');
 
 class UsersCtl {
 	async create(ctx){
@@ -45,6 +45,7 @@ class UsersCtl {
 
   async newClient(ctx){
     const newClient = await new Client(ctx.request.body).save()
+    sendMail()
     ctx.body = JSON.stringify(newClient)
   }
 

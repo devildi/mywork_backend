@@ -21,6 +21,7 @@
     "koa-router": "^8.0.8",
     "koa-static": "^5.0.0",
     "mongoose": "^5.9.3",
+    "nodemailer": "^6.4.17",
     "nodemon": "^2.0.2"
   }
 }
