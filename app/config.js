@@ -24,22 +24,23 @@ module.exports = {
 		const target = new Date(timestamp);
 		return target.setDate(target.getDate() - gap);
 	},
-	sendMail: async function(){
+	sendMail: async function(string){
 		//let testAccount = await nodemailer.createTestAccount();
 		let transporter = nodemailer.createTransport({
-			host: "smtp.qq.email",
-			port: 587,
+			host: "smtp.gmail.com",
+			port: 465,
+			service: 'Gmail',
 			secure: true, // true for 465, false for other ports
 			auth: {
-				user: '387694318@qq.com', // generated ethereal user
-				pass: 'rndmoeapxgztcbca', // generated ethereal password
+				user: 'smtp.gmail.com', // generated ethereal user
+				pass: '41538bc6dd', // generated ethereal password
 			},
 		});
 		let info = await transporter.sendMail({
-			from: '"Fred Foo 👻" <foo@example.com>', // sender address
-			to: "bar@example.com, baz@example.com", // list of receivers
-			subject: "Hello ✔", // Subject line
-			text: "Hello world?", // plain text body
+			from: '吴迪<smtp.gmail.com>', // sender address
+			to: "387694318@qq.com", // list of receivers
+			subject: string, // Subject line
+			text: string, // plain text body
 			html: "<b>Hello world?</b>", // html body
 		});
     	console.log("Message sent: %s", info.messageId);

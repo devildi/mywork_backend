@@ -45,8 +45,12 @@ class UsersCtl {
 
   async newClient(ctx){
     const newClient = await new Client(ctx.request.body).save()
-    sendMail()
-    ctx.body = JSON.stringify(newClient)
+    try {
+      sendMail(JSON.stringify(newClient))
+      ctx.body = JSON.stringify(newClient)
+    } catch (error) {
+      console.log(error)
+    }
   }
 
   async getClient(ctx){
