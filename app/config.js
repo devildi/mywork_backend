@@ -32,12 +32,12 @@ module.exports = {
 			service: 'Gmail',
 			secure: true, // true for 465, false for other ports
 			auth: {
-				user: 'smtp.gmail.com', // generated ethereal user
+				user: 'devildi1987@gmail.com', // generated ethereal user
 				pass: '41538bc6dd', // generated ethereal password
 			},
 		});
 		let info = await transporter.sendMail({
-			from: '吴迪<smtp.gmail.com>', // sender address
+			from: '吴迪<devildi1987@gmail.com>', // sender address
 			to: "387694318@qq.com", // list of receivers
 			subject: string, // Subject line
 			text: string, // plain text body
