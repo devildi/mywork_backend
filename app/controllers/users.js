@@ -45,8 +45,9 @@ class UsersCtl {
 
   async newClient(ctx){
     const newClient = await new Client(ctx.request.body).save()
+    const{wechat, destination} = ctx.request.body
     try {
-      sendMail(JSON.stringify(newClient))
+      sendMail(wechat, destination)
       ctx.body = JSON.stringify(newClient)
     } catch (error) {
       console.log(error)

@@ -24,12 +24,12 @@ module.exports = {
 		const target = new Date(timestamp);
 		return target.setDate(target.getDate() - gap);
 	},
-	sendMail: async function(string){
+	sendMail: async function(wechat, destination){
 		//let testAccount = await nodemailer.createTestAccount();
 		let transporter = nodemailer.createTransport({
 			host: "smtp.gmail.com",
 			port: 465,
-			service: 'Gmail',
+			service: 'gmail',
 			secure: true, // true for 465, false for other ports
 			auth: {
 				user: 'devildi1987@gmail.com', // generated ethereal user
@@ -39,9 +39,9 @@ module.exports = {
 		let info = await transporter.sendMail({
 			from: '吴迪<devildi1987@gmail.com>', // sender address
 			to: "387694318@qq.com", // list of receivers
-			subject: string, // Subject line
-			text: string, // plain text body
-			html: "<b>Hello world?</b>", // html body
+			subject: "NextSticker有新增用户", // Subject line
+			text: `NextSticker有新增用户:${wechat}`, // plain text body
+			html: `<b>微信号：${wechat}</b><br /><b>目的地：${destination}</b>`, // html body
 		});
     	console.log("Message sent: %s", info.messageId);
     	console.log("Preview URL: %s", nodemailer.getTestMessageUrl(info));
