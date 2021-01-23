@@ -55,7 +55,7 @@ class UsersCtl {
   }
 
   async getClient(ctx){
-    const allClients = await Client.find({}).sort({"_id":-1})
+    const allClients = await Client.find({}).sort({"_id": -1})
     ctx.body = allClients
   }
 }

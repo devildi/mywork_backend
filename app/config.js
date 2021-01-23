@@ -43,7 +43,7 @@ module.exports = {
 			text: `NextSticker有新增用户:${wechat}`, // plain text body
 			html: `<b>微信号：${wechat}</b><br /><b>目的地：${destination}</b>`, // html body
 		});
-    	console.log("Message sent: %s", info.messageId);
-    	console.log("Preview URL: %s", nodemailer.getTestMessageUrl(info));
+    	//console.log("Message sent: %s", info.messageId);
+    	//console.log("Preview URL: %s", nodemailer.getTestMessageUrl(info));
 	}
 };
