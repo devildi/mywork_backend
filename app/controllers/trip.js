@@ -35,7 +35,7 @@ class TripCtl {
 	}
 
 	async getAllTrip(ctx){
-		const perPage = 8
+		const perPage = 20
 		const uid = ctx.request.query.uid
 		const page = ctx.request.query.page || 1
 		const trips = await Trip.find().limit(page * perPage)
@@ -56,8 +56,8 @@ class TripCtl {
 		const tag = ctx.request.query.description
 		const trips = await Trip.find({
 			$or : [
-				{city: tag},
-				{country: tag},
+				{city: {$regex : tag}},
+				{country: {$regex : tag}},
 				{tags: {$regex : tag}}
 			]
 		})
@@ -65,9 +65,9 @@ class TripCtl {
 	}
 
 	async getAllStory(ctx){
-		const perPage = 8
+		const perPage = 20
 		const page = ctx.request.query.page || 1
-		const items = await Item.find().sort({"_id":-1}).limit(page * perPage)
+		const items = await Item.find().sort({"_id": -1}).limit(page * perPage)
 		ctx.body = items;
 	}
 }
