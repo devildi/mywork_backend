@@ -1,5 +1,6 @@
 const Trip = require('../models/trip');
 const Item = require('../models/item');
+const { getWidthAndHeight } = require('../config');
 
 class TripCtl {
 	async create(ctx){
@@ -26,6 +27,19 @@ class TripCtl {
 		} else {
 			ctx.body = null
 		}
+	}
+
+	async updateItem(ctx){
+		const item = ctx.request.body
+		
+		let oldItem = await Item.findOne({_id: item._id})
+		oldItem.articleName = item.articleName
+		oldItem.picURL = item.picURL
+		oldItem.articleURL = item.articleURL
+		oldItem.width = item.width
+		oldItem.height = item.height
+		let newIten = await oldItem.save()
+		ctx.body = item
 	}
 
 	async get(ctx){
@@ -69,6 +83,29 @@ class TripCtl {
 		const page = ctx.request.query.page || 1
 		const items = await Item.find().sort({"_id": -1}).limit(page * perPage)
 		ctx.body = items;
+	}
+
+	async getStoryByPage(ctx){
+		const perPage = 14
+		//console.log(ctx.request.query.page)
+		const page = ctx.request.query.page || 1
+		const index = page - 1
+		const items = await Item.find().sort({"_id": -1}).skip(index * perPage).limit(perPage)
+		const allItems = await Item.find()
+		const total = Math.ceil(allItems.length / perPage)
+		ctx.body = {items, total};
+	}
+
+	async getImgWAH(ctx){
+		let string = await getWidthAndHeight(ctx.request.query.url)
+		let array = string.split('(')
+		let array1 = array[1].split(')')
+		let array2 = array1[0].split('×')
+		console.log(array2)
+		ctx.body = {
+			width: parseInt(array2[0]),
+			height: parseInt(array2[1])
+		};
 	}
 }
 

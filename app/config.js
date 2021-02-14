@@ -1,4 +1,5 @@
 const nodemailer = require("nodemailer");
+const puppeteer = require('puppeteer');
 
 module.exports = {
 	port: 4000,
@@ -45,5 +46,14 @@ module.exports = {
 		});
     	//console.log("Message sent: %s", info.messageId);
     	//console.log("Preview URL: %s", nodemailer.getTestMessageUrl(info));
+	},
+	getWidthAndHeight: async function(picURL){
+		const browser = await puppeteer.launch();
+		const page = await browser.newPage();
+		await page.goto(picURL);
+		let result = await page.title();
+		//console.log(result)
+		await browser.close();
+		return result;
 	}
 };
