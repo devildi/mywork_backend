@@ -1,5 +1,6 @@
 const Trip = require('../models/trip');
 const Item = require('../models/item');
+const Photo = require('../models/photo');
 const { getWidthAndHeight } = require('../config');
 
 class TripCtl {
@@ -31,7 +32,6 @@ class TripCtl {
 
 	async updateItem(ctx){
 		const item = ctx.request.body
-		
 		let oldItem = await Item.findOne({_id: item._id})
 		oldItem.articleName = item.articleName
 		oldItem.picURL = item.picURL
@@ -66,6 +66,17 @@ class TripCtl {
 		}
 	}
 
+	async getAllTripByPage(ctx){
+		const perPage = 14
+		//console.log(ctx.request.query.page)
+		const page = ctx.request.query.page || 1
+		const index = page - 1
+		const items = await Trip.find().sort({"_id": -1}).skip(index * perPage).limit(perPage)
+		const allItems = await Trip.find()
+		const total = Math.ceil(allItems.length / perPage)
+		ctx.body = {items, total};
+	}
+
 	async getDescriptedTrip(ctx){
 		const tag = ctx.request.query.description
 		const trips = await Trip.find({
@@ -97,15 +108,53 @@ class TripCtl {
 	}
 
 	async getImgWAH(ctx){
-		let string = await getWidthAndHeight(ctx.request.query.url)
-		let array = string.split('(')
-		let array1 = array[1].split(')')
-		let array2 = array1[0].split('×')
-		console.log(array2)
-		ctx.body = {
-			width: parseInt(array2[0]),
-			height: parseInt(array2[1])
-		};
+		try {
+			let string = await getWidthAndHeight(ctx.request.query.url)
+			let array = string.split('(')
+			let array1 = array[1].split(')')
+			let array2 = array1[0].split('×')
+			console.log(array2)
+			ctx.body = {
+				width: parseInt(array2[0]),
+				height: parseInt(array2[1])
+			};
+		} catch (error) {
+			ctx.body = 'error'
+		}
+	}
+
+	async postPhoto(ctx){
+		let photo = await new Photo(ctx.request.body).save()
+		ctx.body = photo
+	}
+
+	async getPhotosByPage(ctx){
+		const perPage = 32
+		//console.log(ctx.request.query.page)
+		const page = ctx.request.query.page || 1
+		const index = page - 1
+		const items = await Photo.find().sort({"_id": -1}).skip(index * perPage).limit(perPage)
+		const allItems = await Photo.find()
+		const total = Math.ceil(allItems.length / perPage)
+		ctx.body = {items, total, allItems};
+	}
+
+	async updatePhoto(ctx){
+		const item = ctx.request.body
+		let oldItem = await Photo.findOne({_id: item._id})
+		oldItem.tags = item.tags
+		oldItem.picURL = item.picURL
+		oldItem.des = item.des
+		oldItem.width = item.width
+		oldItem.height = item.height
+		let newIten = await oldItem.save()
+		ctx.body = item
+	}
+
+	async deletePhoto(ctx){
+		const item = ctx.request.body
+		let data = await Photo.findOneAndDelete({_id: item.id})
+		ctx.body = data
 	}
 }
 

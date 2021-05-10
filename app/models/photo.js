@@ -1,0 +1,12 @@
+const mongoose = require('mongoose');
+const { Schema, model } = mongoose;
+
+const photoSchema = new Schema({
+	__v: { type: Number, select: false },
+	tags: { type: String},
+	picURL: { type: String, required: true},
+	des: { type: String},
+	width: { type: Number},
+	height: { type: Number}
+})
+module.exports = model('Photo', photoSchema);
