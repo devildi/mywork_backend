@@ -1,7 +1,9 @@
+const axios = require('axios');
 const Trip = require('../models/trip');
 const Item = require('../models/item');
 const Photo = require('../models/photo');
-const { getWidthAndHeight } = require('../config');
+const WeappUser = require('../models/weappUser');
+const { getWidthAndHeight, appid, wesecret } = require('../config');
 
 class TripCtl {
 	async create(ctx){
@@ -133,7 +135,7 @@ class TripCtl {
 		//console.log(ctx.request.query.page)
 		const page = ctx.request.query.page || 1
 		const index = page - 1
-		const items = await Photo.find().sort({"_id": -1}).skip(index * perPage).limit(perPage)
+		const items = await Photo.find().sort({"_id": -1}).skip(index * perPage).limit(perPage).populate({path: 'likes',select: 'openid avatarUrl nickName'})
 		const allItems = await Photo.find()
 		const total = Math.ceil(allItems.length / perPage)
 		ctx.body = {items, total, allItems};
@@ -155,6 +157,47 @@ class TripCtl {
 		const item = ctx.request.body
 		let data = await Photo.findOneAndDelete({_id: item.id})
 		ctx.body = data
+	}
+
+	async logWeapp(ctx){
+		const code = ctx.request.query.code
+		const openid = await axios.get(`https://api.weixin.qq.com/sns/jscode2session?appid=${appid}&secret=${wesecret}&js_code=${code}&grant_type=authorization_code`)
+		ctx.body = openid.data.openid
+	}
+
+	async weappUser(ctx){
+		const {openid, avatarUrl, nickName, articleId, pageIndex} = ctx.request.body
+		let userData = {
+			openid: openid,
+			avatarUrl: avatarUrl,
+			nickName: nickName
+		}
+		const user = await WeappUser.findOne({openid: openid})
+		let photo = await Photo.findById({_id: articleId}).populate({path: 'likes',select: 'openid avatarUrl nickName'})
+		if(!user){
+			let user1 = await new WeappUser(userData).save()
+			photo.likes.push(user1)
+			await photo.save()
+		}
+		let array = photo.likes.filter((i) => {
+			return i.openid === user.openid
+		})
+		if(array.length === 0){
+			photo.likes.push(user)
+			await photo.save()
+		}else{
+			photo.likes.forEach((row, index) => {
+				if(row.openid === user.openid){
+					photo.likes.splice(index, 1)
+				}
+			})
+			await photo.save()
+		}
+		const perPage = 32
+		const page = pageIndex
+		const index = page - 1
+		const items = await Photo.find().sort({"_id": -1}).skip(index * perPage).limit(perPage).populate({path: 'likes',select: 'openid avatarUrl nickName'})
+		ctx.body = items
 	}
 }
 

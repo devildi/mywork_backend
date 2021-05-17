@@ -2,6 +2,8 @@ const nodemailer = require("nodemailer");
 const puppeteer = require('puppeteer');
 
 module.exports = {
+	appid: 'wx9dd29c9565a24027',
+	wesecret: 'd8431676186d8248c2a7e01d32d31c25',
 	port: 4000,
 	secret: 'DavinciUser',
 	authority: 'wudi41538bc6dd',
