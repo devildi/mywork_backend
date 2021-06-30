@@ -1,9 +1,21 @@
-const axios = require('axios');
-const Trip = require('../models/trip');
-const Item = require('../models/item');
-const Photo = require('../models/photo');
-const WeappUser = require('../models/weappUser');
-const { getWidthAndHeight, appid, wesecret } = require('../config');
+const axios = require('axios')
+const Trip = require('../models/trip')
+const Item = require('../models/item')
+const Photo = require('../models/photo')
+const WeappUser = require('../models/weappUser')
+const puppeteer = require('puppeteer')
+const fs = require('fs')
+const path = require('path')
+const util = require('util')
+const { 
+	getWidthAndHeight, 
+	appid, 
+	wesecret, 
+	stationsURL, 
+	mockData,
+	crawler
+} = require('../config');
+const fileUrl = path.join(__dirname, '../stations.txt')
 
 class TripCtl {
 	async create(ctx){
@@ -121,7 +133,7 @@ class TripCtl {
 				height: parseInt(array2[1])
 			};
 		} catch (error) {
-			ctx.body = 'error'
+			ctx.body = error
 		}
 	}
 
@@ -198,6 +210,41 @@ class TripCtl {
 		const index = page - 1
 		const items = await Photo.find().sort({"_id": -1}).skip(index * perPage).limit(perPage).populate({path: 'likes',select: 'openid avatarUrl nickName'})
 		ctx.body = items
+	}
+
+	async ticketsInfo(ctx){
+		let stationsArray = []
+		let Info = []
+		let from = 'shenyang'
+		try{
+			const data = fs.readFileSync(fileUrl)
+			console.log('读车站信息文件成功！')
+			stationsArray = JSON.parse(data.toString('utf-8'))
+		}catch(err){
+			console.log('文件不存在或者文件打不开！重新获取文件！')
+			const stations = await axios.get(stationsURL)
+			const array = stations.data.split('@')
+			array.splice(0,1)
+			array.forEach(function(item){
+				const array1 = item.split('|')
+				stationsArray.push({
+					stationsName: array1[1],
+					stationsNameCHN: array1[3]
+				})
+			})
+			fs.writeFile(fileUrl, JSON.stringify(stationsArray), err => {
+				if(err){
+					console.log('文件写入失败！',err)
+				}else {
+					console.log('文件写入成功！')
+				}
+			})
+		}
+		//数据源：————————————————————————————————————————————————
+		let dataForCrawler = mockData
+		let flag = dataForCrawler.length
+		await crawler(dataForCrawler, Info, from, flag)
+		ctx.body = Info
 	}
 }
 

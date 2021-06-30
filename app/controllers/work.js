@@ -30,7 +30,7 @@ class WorkCtl {
     let allUsers = await User.find()
     let allUsersClone = [...allUsers]
     let filterUser = []
-    console.log(worksAll, allUsers)
+    //console.log(worksAll, allUsers)
     for(let i = 0; i < allUsers.length; i++){
 
       filterUser.push(worksAll.filter(function(item){

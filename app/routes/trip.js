@@ -21,7 +21,8 @@ const {
 	deletePhoto,
 	getAllTripByPage,
 	logWeapp,
-	weappUser
+	weappUser,
+	ticketsInfo
 } = require('../controllers/trip');
 
 router.post('/new', create);
@@ -40,5 +41,7 @@ router.post('/updatePhoto', updatePhoto);
 router.post('/deletePhoto', deletePhoto);
 router.get('/logWeapp', logWeapp)
 router.post('/weappUser', weappUser)
+
+router.get('/ticketsInfo', ticketsInfo)
 
 module.exports = router;
