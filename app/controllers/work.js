@@ -25,7 +25,7 @@ class WorkCtl {
 
   async count(ctx){
     //获取全部有数据用户：
-    console.log('获取全部有数据用户：')
+    //console.log('获取全部有数据用户：')
     const worksAll = await Work.find().populate({path: 'whose',select: 'name'})
     let allUsers = await User.find()
     let allUsersClone = [...allUsers]

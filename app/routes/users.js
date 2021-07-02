@@ -18,5 +18,6 @@ router.post('/login', login);
 router.post('/logout', logout);
 router.post('/newClient', newClient);
 router.get('/getClient', getClient);
+//router.get('/sse', sse);
 
 module.exports = router;

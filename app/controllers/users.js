@@ -2,6 +2,8 @@ const jsonwebtoken = require('jsonwebtoken');
 const User = require('../models/users');
 const Client = require('../models/client')
 const { secret, authority, sendMail } = require('../config');
+const axios = require('axios')
+//const PassThrough = require('stream').PassThrough;
 
 class UsersCtl {
 	async create(ctx){
@@ -48,11 +50,30 @@ class UsersCtl {
     const{wechat, destination} = ctx.request.body
     try {
       sendMail(wechat, destination)
+      //ctx.state.io.emit('addClient', true)
       ctx.body = JSON.stringify(newClient)
     } catch (error) {
       console.log(error)
     }
   }
+
+  // async sse(ctx){
+  //   ctx.status = 200
+  //   const stream = new PassThrough()
+  //   ctx.set('Content-Type', 'text/event-stream')
+  //   ctx.set('Cache-Control', 'no-cache')
+  //   ctx.set('Connection', 'keep-alive')
+  //   ctx.set('Access-Control-Allow-Origin', '*')
+  //   //stream.write(`data: This is test data\n\n`)
+  //   //ctx.res.write(`data: This is test data\n\n`)
+  //   if(ctx.request.query.data){
+  //     console.log("sending")
+  //     ctx.res.write(`data: This is test data\n\n`)
+  //     console.log("sended")
+  //     ctx.res.write(`data: This is test data\n\n`);
+  //   }
+  //   ctx.body = stream
+  // }
 
   async getClient(ctx){
     const allClients = await Client.find({}).sort({"_id": -1})
