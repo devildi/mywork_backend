@@ -88,14 +88,14 @@ async function crawler (array, Info, from, flag, index = 0){
 		dumpio: false
 	})
 	let arrTo = [...item.stationsNameCHN]
+	console.log(`开始爬${item.stationsName}站：`)
 	const page = await browser.newPage()
 	await page.goto(testURL, { waitUntil: 'networkidle2' })
 	if(page.url() === "https://www.12306.cn/mormhweb/logFiles/error.html"){
-		console.log('爬虫被BAN！')
+		console.log('爬虫被BAN！系统准备休眠10mins！')
 		await sleep(1000 * 60 * 10)
+		console.log(`再次爬取${array[index].stationsName}站：`)
 		await crawler(array, Info, from, flag, index)
-		//ctx.body = "爬虫被BAN！"
-		//return
 	}
 	const warningBtn = await page.$('#qd_closeDefaultWarningWindowDialog_id')
 	if(warningBtn){
@@ -141,7 +141,7 @@ async function crawler (array, Info, from, flag, index = 0){
 	}
 	await page.close()
 	await sleep(2000)
-	console.log(`${item.stationsName}站已经爬完！`)
+	console.log(`${item.stationsName}站已经爬完！${index + 1}/${flag}`)
 	index++
 	if(index === flag){
 		console.log('爬虫结束！')
