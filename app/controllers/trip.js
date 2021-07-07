@@ -241,7 +241,8 @@ class TripCtl {
 			})
 		}
 		//数据源：————————————————————————————————————————————————
-		let dataForCrawler = mockData
+		let dataForCrawler = stationsArray
+		//let dataForCrawler = mockData
 		let flag = dataForCrawler.length
 		await crawler(dataForCrawler, Info, from, flag)
 		ctx.body = Info

@@ -2,6 +2,7 @@ const nodemailer = require("nodemailer")
 const puppeteer = require('puppeteer')
 const xls = require("exceljs")
 const path = require('path')
+require('events').EventEmitter.defaultMaxListeners = 0
 
 function farmet(data){
 	for (let key in data){
@@ -90,8 +91,11 @@ async function crawler (array, Info, from, flag, index = 0){
 	const page = await browser.newPage()
 	await page.goto(testURL, { waitUntil: 'networkidle2' })
 	if(page.url() === "https://www.12306.cn/mormhweb/logFiles/error.html"){
-		ctx.body = "爬虫被BAN！"
-		return
+		console.log('爬虫被BAN！')
+		await sleep(1000 * 60 * 10)
+		await crawler(array, Info, from, flag, index)
+		//ctx.body = "爬虫被BAN！"
+		//return
 	}
 	const warningBtn = await page.$('#qd_closeDefaultWarningWindowDialog_id')
 	if(warningBtn){

@@ -4,10 +4,10 @@ const koaStatic = require('koa-static')
 const error = require('koa-json-error')
 const parameter = require('koa-parameter')
 const mongoose = require('mongoose')
-var logger = require('koa-logger')
-const path = require('path');
+const logger = require('koa-logger')
+const path = require('path')
 const db = 'mongodb://localhost/davinci'
-const app = new Koa();
+const app = new Koa()
 
 // const server = require('http').createServer(app.callback())
 // const io = require('socket.io')(server)
@@ -19,7 +19,7 @@ const { port } = require('./config')
 app.use(koaStatic(path.join(__dirname, 'public')))
 app.use(error({
   postFormat: (e, { stack, ...rest }) => process.env.NODE_ENV === 'production' ? rest : { stack, ...rest }
-}));
+}))
 app.use(koaBody({
   multipart: true,
   formidable: {
@@ -28,10 +28,10 @@ app.use(koaBody({
 }))
 
 app.use(async(ctx, next) => {
-  if (ctx.path == "/api/users/newClient") {
+  if (ctx.path == '/api/users/newClient') {
     // console.log('client')
     // ctx.state.io = io
-    return await next();
+    return await next()
   }
   return await next()
 })
@@ -41,7 +41,7 @@ routing(app)
 
 // io.on('connection', (socket) => {
 //   console.log('socket已连接！',socket.id)
-// });
+// })
 
 // server.listen(port, () => console.log(`程序启动在 ${port} 端口`))
 app.listen(port, () => console.log(`程序启动在 ${port} 端口`))
