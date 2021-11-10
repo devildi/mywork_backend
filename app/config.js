@@ -181,17 +181,26 @@ module.exports = {
 	sendMail: async function(wechat, destination){
 		//let testAccount = await nodemailer.createTestAccount();
 		let transporter = nodemailer.createTransport({
-			host: "smtp.gmail.com",
-			port: 465,
-			service: 'gmail',
-			secure: true, // true for 465, false for other ports
+			// host: "smtp.gmail.com",
+			// port: 465,
+			// service: 'gmail',
+			// secure: true, // true for 465, false for other ports
+			// auth: {
+			// 	user: 'devildi1987@gmail.com', // generated ethereal user
+			// 	pass: '41538bc6dd', // generated ethereal password
+			// },
+			host: "smtp.163.com",
+			port: 587,
+			service: '163',
+			secure: false, // true for 465, false for other ports
 			auth: {
-				user: 'devildi1987@gmail.com', // generated ethereal user
-				pass: '41538bc6dd', // generated ethereal password
+				user: 'aabbcc9250@163.com', // generated ethereal user
+				pass: 'CXWBXFZKTYEYRYLI', // generated ethereal password
 			},
 		});
 		let info = await transporter.sendMail({
-			from: '吴迪<devildi1987@gmail.com>', // sender address
+			//from: '吴迪<devildi1987@gmail.com>', // sender address
+			from: '吴迪<aabbcc9250@163.com>', // sender address
 			to: "387694318@qq.com", // list of receivers
 			subject: "NextSticker有新增用户", // Subject line
 			text: `NextSticker有新增用户:${wechat}`, // plain text body
