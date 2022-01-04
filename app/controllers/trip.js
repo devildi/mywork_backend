@@ -7,13 +7,15 @@ const puppeteer = require('puppeteer')
 const fs = require('fs')
 const path = require('path')
 const util = require('util')
+
 const { 
 	getWidthAndHeight, 
 	appid, 
 	wesecret, 
 	stationsURL, 
 	mockData,
-	crawler
+	crawler,
+	crawler_child_process
 } = require('../config');
 const fileUrl = path.join(__dirname, '../stations.txt')
 
@@ -216,6 +218,7 @@ class TripCtl {
 		let stationsArray = []
 		let Info = []
 		let from = 'shenyang'
+
 		try{
 			const data = fs.readFileSync(fileUrl)
 			console.log('读车站信息文件成功！')
@@ -243,8 +246,10 @@ class TripCtl {
 		//数据源：————————————————————————————————————————————————
 		let dataForCrawler = stationsArray
 		//let dataForCrawler = mockData
+
 		let flag = dataForCrawler.length
 		await crawler(dataForCrawler, Info, from, flag)
+		//await crawler_child_process(dataForCrawler, Info, from, flag)
 		ctx.body = Info
 	}
 }

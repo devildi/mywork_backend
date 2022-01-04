@@ -2,6 +2,8 @@ const nodemailer = require("nodemailer")
 const puppeteer = require('puppeteer')
 const xls = require("exceljs")
 const path = require('path')
+const cp = require('child_process')
+const util = require('util')
 require('events').EventEmitter.defaultMaxListeners = 0
 
 function farmet(data){
@@ -79,6 +81,23 @@ function sleep(time){
 	})
 }
 const testURL = 'https://kyfw.12306.cn/otn/leftTicket/init'
+const scriptPath = './script/12306'
+
+async function crawler_child_process (array, Info, from, flag, index = 0){
+	let script = path.resolve(__dirname, scriptPath)
+	let item = array[index]
+	const execFile = util.promisify(cp.execFile)
+	let result = await execFile('node', [script, from, JSON.stringify(item)])
+	console.log(result)
+	
+	index++
+	if(index === flag){
+		console.log('爬虫结束！')
+		return Info
+	} else{
+		await crawler_child_process(array, Info, from, flag, index)
+	}
+}
 
 async function crawler (array, Info, from, flag, index = 0){
 	let arrFrom = [...from]
@@ -91,6 +110,7 @@ async function crawler (array, Info, from, flag, index = 0){
 	console.log(`开始爬${item.stationsName}站：`)
 	const page = await browser.newPage()
 	await page.goto(testURL, { waitUntil: 'networkidle2' })
+
 	if(page.url() === "https://www.12306.cn/mormhweb/logFiles/error.html"){
 		console.log('爬虫被BAN！系统准备休眠10mins！')
 		await sleep(1000 * 60 * 10)
@@ -223,5 +243,10 @@ module.exports = {
 		{"stationsName":"北京北","stationsNameCHN":"beijingbei"},
 		{"stationsName":"上海","stationsNameCHN":"shanghai"}
 	],
-	crawler
+	crawler,
+	crawler_child_process,
+	Excel,
+	sleep,
+	trainFilter,
+	testURL
 };
