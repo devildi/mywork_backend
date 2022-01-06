@@ -24,7 +24,7 @@ let arr = process.argv.splice(2)
 	await page.goto(testURL, {waitUntil: 'networkidle2'})
 
 	if(page.url() === "https://www.12306.cn/mormhweb/logFiles/error.html"){
-			console.log('爬虫被BAN！系统准备休眠10mins！')
+		console.log('爬虫被BAN！系统准备休眠10mins！')
 	}
 
 	const warningBtn = await page.$('#qd_closeDefaultWarningWindowDialog_id')

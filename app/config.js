@@ -169,6 +169,7 @@ async function crawler (array, Info, from, flag, index = 0){
 		console.log('爬虫结果：',Info)
 		return Info
 	} else{
+		await browser.close();
 		await crawler(array, Info, from, flag, index)
 	}
 }
