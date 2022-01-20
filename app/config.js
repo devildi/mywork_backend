@@ -108,70 +108,84 @@ async function crawler (array, Info, from, flag, index = 0){
 	})
 	let arrTo = [...item.stationsNameCHN]
 	console.log(`开始爬${item.stationsName}站：`)
+
 	const page = await browser.newPage()
 	await page.goto(testURL, { waitUntil: 'networkidle2' })
+	
+	try {
+		if(page.url() === "https://www.12306.cn/mormhweb/logFiles/error.html"){
+			console.log('爬虫被BAN！系统准备休眠10mins！')
+			await sleep(1000 * 60 * 10)
+			console.log(`再次爬取${array[index].stationsName}站：`)
+			await crawler(array, Info, from, flag, index)
+		}
+		const warningBtn = await page.$('#qd_closeDefaultWarningWindowDialog_id')
+		if(warningBtn){
+			await page.tap('#qd_closeDefaultWarningWindowDialog_id')
+		}
 
-	if(page.url() === "https://www.12306.cn/mormhweb/logFiles/error.html"){
-		console.log('爬虫被BAN！系统准备休眠10mins！')
-		await sleep(1000 * 60 * 10)
-		console.log(`再次爬取${array[index].stationsName}站：`)
-		await crawler(array, Info, from, flag, index)
-	}
-	const warningBtn = await page.$('#qd_closeDefaultWarningWindowDialog_id')
-	if(warningBtn){
-		await page.tap('#qd_closeDefaultWarningWindowDialog_id')
-	}
+		await page.tap('#fromStationText')
+		for (let i = 0; i < arrFrom.length; i++){
+			await page.keyboard.press(arrFrom[i]);
+		}
+		await page.keyboard.press('Enter')
 
-	await page.tap('#fromStationText')
-	for (let i = 0; i < arrFrom.length; i++){
-		await page.keyboard.press(arrFrom[i]);
-	}
-	await page.keyboard.press('Enter')
+		await page.tap('#toStationText')
+		for (let i = 0; i < arrTo.length; i++){
+			await page.keyboard.press(arrTo[i]);
+		}
+		await page.keyboard.press('Enter')
 
-	await page.tap('#toStationText')
-	for (let i = 0; i < arrTo.length; i++){
-		await page.keyboard.press(arrTo[i]);
-	}
-	await page.keyboard.press('Enter')
-
-	await page.click('#date_range>ul>li:nth-child(2)')
-	await sleep(2000)
-	const result = await page.evaluate( () => {
-			var result = []
-			var arr = document.querySelectorAll('.ticket-info')
-			if(arr && arr.length > 0){
-				for (let i = 0; i < arr.length; i++){
-					let No = arr[i].querySelector('.train > div > a').innerText
-					let depart = arr[i].querySelector('.cds>.start-t ').innerText
-					let arrive = arr[i].querySelector('.cds>.color999').innerText
-					let duration = arr[i].querySelector('.ls>strong').innerText
-					result.push({No, depart, arrive, duration})
+		await page.click('#date_range>ul>li:nth-child(2)')
+		await sleep(2000)
+		const result = await page.evaluate( () => {
+				var result = []
+				var arr = document.querySelectorAll('.ticket-info')
+				if(arr && arr.length > 0){
+					for (let i = 0; i < arr.length; i++){
+						let No = arr[i].querySelector('.train > div > a').innerText
+						let depart = arr[i].querySelector('.cds>.start-t ').innerText
+						let arrive = arr[i].querySelector('.cds>.color999').innerText
+						let duration = arr[i].querySelector('.ls>strong').innerText
+						result.push({No, depart, arrive, duration})
+					}
 				}
+				return result
 			}
-			return result
+		)
+		if(result.length > 0){
+			let resultInfo = trainFilter(item.stationsName, result)
+			if(resultInfo){
+				Info.push(resultInfo)
+				//写入文件
+				await Excel(resultInfo, from)
+			}
 		}
-	)
-	if(result.length > 0){
-		let resultInfo = trainFilter(item.stationsName, result)
-		if(resultInfo){
-			Info.push(resultInfo)
-			//写入文件
-			await Excel(resultInfo, from)
+		await page.close()
+		await sleep(2000)
+		console.log(`${item.stationsName}站已经爬完！${index + 1}/${flag}`)
+		index++
+		if(index === flag){
+			console.log('爬虫结束！')
+			await browser.close();
+			console.log('爬虫结果：',Info)
+			return Info
+		} else{
+			await browser.close();
+			await crawler(array, Info, from, flag, index)
 		}
-	}
-	await page.close()
-	await sleep(2000)
-	console.log(`${item.stationsName}站已经爬完！${index + 1}/${flag}`)
-	index++
-	if(index === flag){
-		console.log('爬虫结束！')
-		await browser.close();
-		console.log('爬虫结果：',Info)
-		return Info
-	} else{
-		await browser.close();
+	} catch (error) {
+		console.log(`爬虫出错，10min后重新爬${item.stationsName}站！`)
+		if(page){
+			await page.close()
+		}
+		if(browser){
+			await browser.close()
+		}
+		await sleep(1000 * 60 * 10)
 		await crawler(array, Info, from, flag, index)
 	}
+	
 }
 module.exports = {
 	appid: 'wx9dd29c9565a24027',
