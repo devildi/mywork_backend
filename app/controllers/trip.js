@@ -168,7 +168,7 @@ class TripCtl {
 	}
 
 	async findPhotoById(ctx){
-		const item = await Photo.findOne({_id: ctx.query.id})
+		const item = await Photo.findOne({_id: ctx.query.id}).populate({path: 'likes',select: 'openid avatarUrl nickName'})
 		ctx.body = item
 	}
 
