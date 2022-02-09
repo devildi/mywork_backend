@@ -167,6 +167,11 @@ class TripCtl {
 		ctx.body = item
 	}
 
+	async findPhotoById(ctx){
+		const item = await Photo.findOne({_id: ctx.query.id})
+		ctx.body = item
+	}
+
 	async deletePhoto(ctx){
 		const item = ctx.request.body
 		let data = await Photo.findOneAndDelete({_id: item.id})

@@ -19,6 +19,7 @@ const {
 	getPhotosByPage,
 	updatePhoto,
 	deletePhoto,
+	findPhotoById,
 	getAllTripByPage,
 	logWeapp,
 	weappUser,
@@ -37,6 +38,7 @@ router.get('/getStoryByPage', getStoryByPage)
 router.get('/getImgWAH', getImgWAH)
 router.post('/photoInput', postPhoto)
 router.get('/getPhotos', getPhotosByPage)
+router.get('/findPhotoById', findPhotoById)
 router.post('/updatePhoto', updatePhoto);
 router.post('/deletePhoto', deletePhoto);
 router.get('/logWeapp', logWeapp)
