@@ -58,6 +58,12 @@ class TripCtl {
 		ctx.body = item
 	}
 
+	async getStoryById(ctx){
+		const uid = ctx.request.query._id
+		const story = await Item.findOne({ _id: uid });
+		ctx.body = story;
+	}
+
 	async get(ctx){
 		const uid = ctx.request.query.uid
 		const trip = await Trip.findOne({ uid: uid });
@@ -100,6 +106,19 @@ class TripCtl {
 				{city: {$regex : tag}},
 				{country: {$regex : tag}},
 				{tags: {$regex : tag}}
+			]
+		})
+		ctx.body = trips;
+	}
+
+	async getDescriptedTrip1(ctx){
+		const tag = ctx.request.query.description
+		const trips = await Trip.find({
+			$or : [
+				{city: {$regex : tag}},
+				{country: {$regex : tag}},
+				{tags: {$regex : tag}},
+				{uid: {$regex : tag}}
 			]
 		})
 		ctx.body = trips;

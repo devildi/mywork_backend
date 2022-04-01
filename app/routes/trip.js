@@ -23,16 +23,20 @@ const {
 	getAllTripByPage,
 	logWeapp,
 	weappUser,
-	ticketsInfo
+	ticketsInfo,
+	getStoryById,
+	getDescriptedTrip1
 } = require('../controllers/trip');
 
 router.post('/new', create);
 router.post('/newItem', createItem);
 router.post('/updateItem', updateItem);
+router.get('/getStoryById', getStoryById)
 router.get('/get', get);
 router.get('/getAllTrip', getAllTrip);
 router.get('/getAllTripByPage', getAllTripByPage);
 router.get('/getDescriptedTrip', getDescriptedTrip);
+router.get('/getDescriptedTrip1', getDescriptedTrip1);
 router.get('/getAllStory', getAllStory)
 router.get('/getStoryByPage', getStoryByPage)
 router.get('/getImgWAH', getImgWAH)
