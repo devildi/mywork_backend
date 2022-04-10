@@ -187,6 +187,18 @@ async function crawler (array, Info, from, flag, index = 0){
 	}
 	
 }
+
+function promise1(client, url){
+	return new Promise((resolve, reject) => {
+		client.sayHello({name: url}, (err, response) => {
+			if(err){
+				reject()
+			}
+			//console.log('从GRPC回传的信息：',response.message);
+			resolve(response.message)
+		});
+	})
+}
 module.exports = {
 	appid: 'wx9dd29c9565a24027',
 	wesecret: 'd8431676186d8248c2a7e01d32d31c25',
@@ -263,5 +275,6 @@ module.exports = {
 	Excel,
 	sleep,
 	trainFilter,
-	testURL
+	testURL,
+	promise1
 };

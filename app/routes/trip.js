@@ -25,7 +25,8 @@ const {
 	weappUser,
 	ticketsInfo,
 	getStoryById,
-	getDescriptedTrip1
+	getDescriptedTrip1,
+	getStoryDetailByGRPC
 } = require('../controllers/trip');
 
 router.post('/new', create);
@@ -49,5 +50,7 @@ router.get('/logWeapp', logWeapp)
 router.post('/weappUser', weappUser)
 
 router.get('/ticketsInfo', ticketsInfo)
+
+router.get('/getStoryDetailByGRPC', getStoryDetailByGRPC)
 
 module.exports = router;

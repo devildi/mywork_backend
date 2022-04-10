@@ -8,6 +8,8 @@ const fs = require('fs')
 const path = require('path')
 const util = require('util')
 
+const client = require('../../GRPC/story_client')
+
 const { 
 	getWidthAndHeight, 
 	appid, 
@@ -15,7 +17,8 @@ const {
 	stationsURL, 
 	mockData,
 	crawler,
-	crawler_child_process
+	crawler_child_process,
+	promise1
 } = require('../config');
 const fileUrl = path.join(__dirname, '../stations.txt')
 
@@ -275,6 +278,13 @@ class TripCtl {
 		await crawler(dataForCrawler, Info, from, flag)
 		//await crawler_child_process(dataForCrawler, Info, from, flag)
 		ctx.body = Info
+	}
+//GRPC below
+	async getStoryDetailByGRPC(ctx){
+		const url = ctx.request.query.url
+		const data = await promise1(client, url)
+		console.log(data)
+		ctx.body = data
 	}
 }
 

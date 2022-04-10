@@ -11,6 +11,8 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
+    "@grpc/grpc-js": "^1.6.1",
+    "@grpc/proto-loader": "^0.6.9",
     "axios": "^0.21.1",
     "exceljs": "^4.2.1",
     "jsonwebtoken": "^8.5.1",
