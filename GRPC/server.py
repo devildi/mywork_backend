@@ -1,3 +1,4 @@
+#encoding:utf-8
 #python -m grpc_tools.protoc -I../../protos --python_out=. --grpc_python_out=. ../../protos/helloworld.proto
 from concurrent import futures
 from multiprocessing import Process
