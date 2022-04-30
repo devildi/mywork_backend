@@ -283,7 +283,6 @@ class TripCtl {
 	async getStoryDetailByGRPC(ctx){
 		const url = ctx.request.query.url
 		const data = await promise1(client, url)
-		console.log(data)
 		ctx.body = data
 	}
 }

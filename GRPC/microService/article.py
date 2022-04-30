@@ -54,7 +54,7 @@ class ArticleSpider(scrapy.Spider):
             if end:
                 for e in end:
                     arr1.append(e.get())
-        if(len(arr) > len(arr1)):
+        if(len(arr) >= len(arr1)):
             return {'result': arr}
         else:
             return {'result': arr1}
