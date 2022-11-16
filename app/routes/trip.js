@@ -26,9 +26,11 @@ const {
 	ticketsInfo,
 	getStoryById,
 	getDescriptedTrip1,
-	getStoryDetailByGRPC
+	getStoryDetailByGRPC,
+	getUploadToken
 } = require('../controllers/trip');
 
+router.get('/getUploadToken', getUploadToken);
 router.post('/new', create);
 router.post('/newItem', createItem);
 router.post('/updateItem', updateItem);

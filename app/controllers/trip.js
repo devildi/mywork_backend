@@ -1,4 +1,5 @@
 const axios = require('axios')
+const qiniu = require('qiniu')
 const Trip = require('../models/trip')
 const Item = require('../models/item')
 const Photo = require('../models/photo')
@@ -18,7 +19,11 @@ const {
 	mockData,
 	crawler,
 	crawler_child_process,
-	promise1
+	promise1,
+	accessKey,
+	secretKey,
+	bucket,
+	outerURL
 } = require('../config');
 const fileUrl = path.join(__dirname, '../stations.txt')
 
@@ -38,14 +43,26 @@ class TripCtl {
 
 	async createItem(ctx){
 		const item = ctx.request.body
-		const {articleURL} = item
-		const article = await Item.findOne({articleURL: articleURL})
-		console.log(article)
-		if(!article){
+		const {articleURL, picURL, articleType, album} = item
+		if(articleType === 2){
+			item.picURL = outerURL + picURL
+			album.forEach((item, index) => {
+				item.key = outerURL + item.key
+			})
+		} else if(articleType === 3){
+			item.picURL = outerURL + picURL
+		}
+		if(articleURL){
+			const article = await Item.findOne({articleURL: articleURL})
+			if(!article){
+				let newItem = await new Item(item).save()
+				ctx.body = newItem
+			} else {
+				ctx.body = null
+			}
+		}else{
 			let newItem = await new Item(item).save()
 			ctx.body = newItem
-		} else {
-			ctx.body = null
 		}
 	}
 
@@ -284,6 +301,27 @@ class TripCtl {
 		const url = ctx.request.query.url
 		const data = await promise1(client, url)
 		ctx.body = data
+	}
+
+	async getUploadToken(ctx){
+		let mac = new qiniu.auth.digest.Mac(accessKey, secretKey)
+		let type = ctx.request.query.type
+		console.log(type)
+		let options = null
+		if(type !== '3'){
+			options = {
+				scope: bucket,
+				returnBody: '{"width":"$(imageInfo.width)","height":"$(imageInfo.height)","key":"$(key)"}'
+			}
+		} else {
+			options = {
+				scope: bucket,
+				returnBody: '{"width":"$(avinfo.video.width)","height":"$(avinfo.video.height)","key":"$(key)"}'
+			}
+		}
+		var putPolicy = new qiniu.rs.PutPolicy(options)
+		var uploadToken = putPolicy.uploadToken(mac)
+		ctx.body = uploadToken
 	}
 }
 

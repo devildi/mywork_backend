@@ -200,6 +200,10 @@ function promise1(client, url){
 	})
 }
 module.exports = {
+	accessKey :'o9zaFko-BJ4y7txnOpEiFJfPTalWI2LQLS3exIr1',
+	secretKey :'67dcr5piITYljpd8rkyEbDz0wugIRqOARK8Frvkk',
+	bucket: 'wudi0',
+	outerURL: 'http://rktu6j6gy.hd-bkt.clouddn.com/',
 	appid: 'wx9dd29c9565a24027',
 	wesecret: 'd8431676186d8248c2a7e01d32d31c25',
 	port: 4000,

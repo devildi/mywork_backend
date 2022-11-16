@@ -23,11 +23,13 @@
     "koa-logger": "^3.2.1",
     "koa-parameter": "^3.0.1",
     "koa-router": "^8.0.8",
+    "koa-socket": "^4.4.0",
     "koa-static": "^5.0.0",
     "mongoose": "^5.9.3",
     "nodemailer": "^6.4.17",
     "nodemon": "^2.0.2",
     "puppeteer": "^7.0.4",
-    "socket.io": "^4.1.2"
+    "qiniu": "^7.8.0",
+    "socket.io": "^4.5.3"
   }
 }
