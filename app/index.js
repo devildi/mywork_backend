@@ -34,9 +34,9 @@ app.use(koaBody({
 }))
 
 app.use(async(ctx, next) => {
+  console.log('中间件')
+  ctx.state.io = io
   if (ctx.path == '/api/users/newClient') {
-    // console.log('client')
-    // ctx.state.io = io
     return await next()
   }
   return await next()
