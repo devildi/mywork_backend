@@ -50,9 +50,9 @@ class UsersCtl {
     const newClient = await new Client(ctx.request.body).save()
     const{wechat, destination} = ctx.request.body
     try {
-      sendMail(wechat, destination)
+      //sendMail(wechat, destination)
       let io = ctx.state.io
-    	io.emit('init', newClient)
+    	io.emit('notification', newClient)
       ctx.body = JSON.stringify(newClient)
     } catch (error) {
       console.log(error)
