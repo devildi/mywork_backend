@@ -14,6 +14,7 @@ const app = new Koa()
 const server = require('http').createServer(app.callback())
 const { Server } = require("socket.io");
 const io = new Server(server);
+var connected = 0
 
 app.use(logger())
 mongoose.connect(db,{useNewUrlParser: true, useUnifiedTopology: true}, (err) => {
@@ -34,7 +35,7 @@ app.use(koaBody({
 }))
 
 app.use(async(ctx, next) => {
-  console.log('中间件')
+  console.log('进入中间件', connected)
   ctx.state.io = io
   if (ctx.path == '/api/users/newClient') {
     return await next()
@@ -45,11 +46,16 @@ app.use(async(ctx, next) => {
 app.use(parameter(app))
 routing(app)
 io.on('connection', (socket) => {
-  console.log('socket已连接！',socket.id)
+  console.log('有新的socket已连接！',socket.id)
+  io.emit('increase', ++connected);
   socket.on('chat message', (msg) => {
     //socket.broadcast.emit('data', msg);
     io.emit('data', msg);
-  });
+  })
+  socket.on("disconnect", (reason) => {
+    console.log('disconnect')
+    io.emit('decrease', --connected);
+  })
 })
 
 server.listen(port, () => console.log(`程序启动在 ${port} 端口`))
