@@ -52,7 +52,7 @@ class UsersCtl {
     try {
       sendMail(wechat, destination)
       let io = ctx.state.io
-    	io.emit('notification', newClient)
+    	io.emit('notification', JSON.stringify(newClient))
       ctx.body = JSON.stringify(newClient)
     } catch (error) {
       console.log(error)
