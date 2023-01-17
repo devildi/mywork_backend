@@ -1,7 +1,6 @@
 const jwt = require('koa-jwt');
 const Router = require('koa-router');
 const router = new Router({ prefix: '/api/trip' });
-
 const { secret } = require('../config');
 const auth = jwt({ secret });
 
@@ -50,9 +49,7 @@ router.post('/updatePhoto', updatePhoto);
 router.post('/deletePhoto', deletePhoto);
 router.get('/logWeapp', logWeapp)
 router.post('/weappUser', weappUser)
-
 router.get('/ticketsInfo', ticketsInfo)
-
 router.get('/getStoryDetailByGRPC', getStoryDetailByGRPC)
 
 module.exports = router;
