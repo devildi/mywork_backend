@@ -29,13 +29,22 @@ class UsersCtl {
     ctx.verifyParams({
       name: { type: 'string', required: true },
       password: { type: 'string', required: true },
+      from: { type: 'string', required: false },
     });
-    const user = await User.findOne(ctx.request.body);
+    const {name, password, from} = ctx.request.body
+    console.log(from)
+    const user = await User.findOne({name, password}).populate({path: 'like'})
     if(user){
+      console.log(1)
       const { _id, name } = user;
       const token = jsonwebtoken.sign({ _id, name }, secret, { expiresIn: '1d' });
-      ctx.body = { name, token };
+      if(from === 'app') {
+        ctx.body = user;
+      } else {
+        ctx.body = { name, token };
+      }
     } else {
+      console.log(2)
       ctx.body = user;
     }
   }

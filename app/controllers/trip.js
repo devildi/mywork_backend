@@ -3,6 +3,8 @@ const qiniu = require('qiniu')
 const Trip = require('../models/trip')
 const Item = require('../models/item')
 const Photo = require('../models/photo')
+const User = require('../models/users');
+const Comment = require('../models/comment');
 const WeappUser = require('../models/weappUser')
 const puppeteer = require('puppeteer')
 const fs = require('fs')
@@ -43,7 +45,7 @@ class TripCtl {
 
 	async createItem(ctx){
 		const item = ctx.request.body
-		const {articleURL, picURL, articleType, album} = item
+		const {articleURL, picURL, articleType, album, author} = item
 		if(articleType === 2){
 			item.picURL = outerURL + picURL
 			album.forEach((item, index) => {
@@ -80,7 +82,7 @@ class TripCtl {
 
 	async getStoryById(ctx){
 		const uid = ctx.request.query._id
-		const story = await Item.findOne({ _id: uid });
+		const story = await Item.findOne({ _id: uid }).populate({path: 'likes'}).populate({path: 'author'}).populate({path: 'collects'}).populate({path: 'comments', populate: { path: 'whoseContent' }})
 		ctx.body = story;
 	}
 
@@ -147,7 +149,7 @@ class TripCtl {
 	async getAllStory(ctx){
 		const perPage = 20
 		const page = ctx.request.query.page || 1
-		const items = await Item.find().sort({"_id": -1}).limit(page * perPage)
+		const items = await Item.find().sort({"_id": -1}).limit(page * perPage).populate({path: 'author'}).populate({path: 'likes'}).populate({path: 'collects'}).populate({path: 'comments', populate: { path: 'whoseContent' }})
 		ctx.body = items;
 	}
 
@@ -156,7 +158,7 @@ class TripCtl {
 		//console.log(ctx.request.query.page)
 		const page = ctx.request.query.page || 1
 		const index = page - 1
-		const items = await Item.find().sort({"_id": -1}).skip(index * perPage).limit(perPage)
+		const items = await Item.find().sort({"_id": -1}).skip(index * perPage).limit(perPage).populate({path: 'author'}).populate({path: 'likes'}).populate({path: 'collects'}).populate({path: 'comments', populate: { path: 'whoseContent' }})
 		const allItems = await Item.find()
 		const total = Math.ceil(allItems.length / perPage)
 		ctx.body = {items, total};
@@ -258,11 +260,59 @@ class TripCtl {
 		ctx.body = items
 	}
 
+	async poComment(ctx){
+		const {content, uid, articleId} = ctx.request.body
+		let user = await User.findOne({_id: uid}).populate({path: 'like'})
+		let article1 = await Item.findOne({_id: articleId})
+		let article = await Item.findOne({_id: articleId}).populate({path: 'likes'}).populate({path: 'author'}).populate({path: 'collects'}).populate({path: 'comments', populate: { path: 'whoseContent' }})
+		let comment = await new Comment({content, whoseContent: user}).save()
+		article.comments.push(comment)
+		let item = await article.save()
+		ctx.body = item
+	}
+
+	async clickLike(ctx){
+		const {type, uid, articleId} = ctx.request.body
+		let user = await User.findOne({_id: uid}).populate({path: 'like'})
+		let article = await Item.findOne({_id: articleId}).populate({path: 'likes'}).populate({path: 'author'}).populate({path: 'collects'}).populate({path: 'comments', populate: { path: 'whoseContent' }})
+		if(type === 'like'){
+			let array = article.likes.filter((i) => {
+				return i._id + '' === user._id + ''
+			})
+			if(array.length === 0){
+				article.likes.push(user)
+				article = await article.save()
+			}else{
+				article.likes.forEach((row, index) => {
+					if(row._id + '' === uid + ''){
+						article.likes.splice(index, 1)
+					}
+				})
+				article = await article.save()
+			}
+		} else {
+			let array = article.collects.filter((i) => {
+				return i._id + '' === user._id + ''
+			})
+			if(array.length === 0){
+				article.collects.push(user)
+				article = await article.save()
+			}else{
+				article.collects.forEach((row, index) => {
+					if(row._id + '' === uid + ''){
+						article.collects.splice(index, 1)
+					}
+				})
+				article = await article.save()
+			}
+		}
+		ctx.body = article
+	}
+
 	async ticketsInfo(ctx){
 		let stationsArray = []
 		let Info = []
 		let from = 'shenyang'
-
 		try{
 			const data = fs.readFileSync(fileUrl)
 			console.log('读车站信息文件成功！')

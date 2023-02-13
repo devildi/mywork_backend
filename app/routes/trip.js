@@ -26,7 +26,9 @@ const {
 	getStoryById,
 	getDescriptedTrip1,
 	getStoryDetailByGRPC,
-	getUploadToken
+	getUploadToken,
+	clickLike,
+	poComment
 } = require('../controllers/trip');
 
 router.get('/getUploadToken', getUploadToken);
@@ -49,6 +51,8 @@ router.post('/updatePhoto', updatePhoto);
 router.post('/deletePhoto', deletePhoto);
 router.get('/logWeapp', logWeapp)
 router.post('/weappUser', weappUser)
+router.post('/clickLike', clickLike)
+router.post('/poComment', poComment)
 router.get('/ticketsInfo', ticketsInfo)
 router.get('/getStoryDetailByGRPC', getStoryDetailByGRPC)
 
