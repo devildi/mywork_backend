@@ -28,7 +28,9 @@ const {
 	getStoryDetailByGRPC,
 	getUploadToken,
 	clickLike,
-	poComment
+	poComment,
+	getStoryByAuthor,
+	getLikeOrCollectStoryByAuthor
 } = require('../controllers/trip');
 
 router.get('/getUploadToken', getUploadToken);
@@ -43,6 +45,8 @@ router.get('/getDescriptedTrip', getDescriptedTrip);
 router.get('/getDescriptedTrip1', getDescriptedTrip1);
 router.get('/getAllStory', getAllStory)
 router.get('/getStoryByPage', getStoryByPage)
+router.get('/getStoryByAuthor', getStoryByAuthor)
+router.get('/getLikeOrCollectStoryByAuthor', getLikeOrCollectStoryByAuthor)
 router.get('/getImgWAH', getImgWAH)
 router.post('/photoInput', postPhoto)
 router.get('/getPhotos', getPhotosByPage)

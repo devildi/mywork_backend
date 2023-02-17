@@ -153,9 +153,29 @@ class TripCtl {
 		ctx.body = items;
 	}
 
+	async getStoryByAuthor(ctx){
+		const page = ctx.request.query.page || 1
+		const perPage = 20
+		const uid = ctx.request.query.uid
+		const items = await Item.find({"author": uid}).sort({"_id": -1}).limit(page * perPage).populate({path: 'author'}).populate({path: 'likes'}).populate({path: 'collects'}).populate({path: 'comments', populate: { path: 'whoseContent' }})
+		ctx.body = items;
+	}
+
+	async getLikeOrCollectStoryByAuthor(ctx){
+		let items = null
+		const page = ctx.request.query.page || 1
+		const perPage = 20
+		const {uid, type} = ctx.request.query
+		if(type === 'likes'){
+			items = await Item.find({likes: uid}).sort({"_id": -1}).limit(page * perPage).populate({path: 'author'}).populate({path: 'likes'}).populate({path: 'collects'}).populate({path: 'comments', populate: { path: 'whoseContent' }})
+		} else {
+			items = await Item.find({collects: uid}).sort({"_id": -1}).limit(page * perPage).populate({path: 'author'}).populate({path: 'likes'}).populate({path: 'collects'}).populate({path: 'comments', populate: { path: 'whoseContent' }})
+		}
+		ctx.body = items;
+	}
+
 	async getStoryByPage(ctx){
 		const perPage = 14
-		//console.log(ctx.request.query.page)
 		const page = ctx.request.query.page || 1
 		const index = page - 1
 		const items = await Item.find().sort({"_id": -1}).skip(index * perPage).limit(perPage).populate({path: 'author'}).populate({path: 'likes'}).populate({path: 'collects'}).populate({path: 'comments', populate: { path: 'whoseContent' }})

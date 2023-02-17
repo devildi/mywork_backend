@@ -14,11 +14,13 @@ class UsersCtl {
     });
     const { name, auth} = ctx.request.body;
     if(auth !== authority){
-      ctx.throw(401, '未授权');
+      //ctx.throw(401, '未授权');
+      ctx.body = '未授权！'
+      return
     }
     const repeatedUser = await User.findOne({ name });
     if (repeatedUser) {
-      ctx.body = '此工号已经注册，请直接登录！'
+      ctx.body = '此用户名已经注册！'
       return
     }
     const user = await new User(ctx.request.body).save();
