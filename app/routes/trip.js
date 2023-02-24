@@ -30,7 +30,9 @@ const {
 	clickLike,
 	poComment,
 	getStoryByAuthor,
-	getLikeOrCollectStoryByAuthor
+	getLikeOrCollectStoryByAuthor,
+	fetchInfo,
+	fetchImgs
 } = require('../controllers/trip');
 
 router.get('/getUploadToken', getUploadToken);
@@ -59,5 +61,8 @@ router.post('/clickLike', clickLike)
 router.post('/poComment', poComment)
 router.get('/ticketsInfo', ticketsInfo)
 router.get('/getStoryDetailByGRPC', getStoryDetailByGRPC)
+router.get('/ticketsInfo', ticketsInfo)
+router.get('/fetchInfo', fetchInfo)
+router.get('/fetchImgs', fetchImgs)
 
 module.exports = router;

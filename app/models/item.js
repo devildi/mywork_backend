@@ -7,6 +7,7 @@ const itemSchema = new Schema({
 	articleName: { type: String},
 	articleContent: { type: String},//图文内容
 	picURL: { type: String, required: true},
+	videoURL: { type: String},
 	articleURL: { type: String},//公众号专有
 	width: { type: Number},
 	height: { type: Number},

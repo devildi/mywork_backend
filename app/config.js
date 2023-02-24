@@ -199,6 +199,82 @@ function promise1(client, url){
 		});
 	})
 }
+
+const googleTravelURL = 'https://www.google.com/travel/things-to-do'
+
+async function getInfoFromGoogleTravel(){
+	const browser = await puppeteer.launch({
+		args: ['--no-sandbox'],
+		dumpio: false
+	})
+	const page = await browser.newPage()
+	await page.goto(googleTravelURL, { waitUntil: 'networkidle2' })
+	const input = await page.$('input[type=text]')
+	await input.type('棋盘山')
+	await page.keyboard.press('Enter')
+	await sleep(5000)
+	const elementHandle = await page.$('.LyuOgc')
+	const elementContent = await elementHandle.evaluate(element => element.textContent)
+	return elementContent
+}
+
+async function getPicsFromGoogleTravel(){
+	const browser = await puppeteer.launch({
+		args: ['--no-sandbox'],
+		dumpio: false
+	})
+	const page = await browser.newPage()
+	await page.goto(googleTravelURL, { waitUntil: 'networkidle2' })
+	const input = await page.$('input[type=text]')
+	await input.type('棋盘山')
+	await page.keyboard.press('Enter')
+	await sleep(5000)
+	await page.screenshot({ path: 'shotPath0.png' });
+	const ele = await page.$('.QtzoWd');
+	const box = await ele.boundingBox();
+	const x = box.x + box.width / 2;
+	const y = box.y + box.height / 2;
+	await page.mouse.move(x, y);
+	
+	const elementCount = await page.$$eval('.QtzoWd', elements => elements.length)
+	let loopTimes = (elementCount - 1) / 2
+	console.log(loopTimes)
+	await page.screenshot({ path: 'shotPath.png' });
+
+	const element2 = await page.$('.VfPpkd-BIzmGd.SaBhMc.NNFoTc.Hkd4je.E9mvxc.V0XOz.a2rVxf.VfPpkd-BIzmGd-OWXEXe-yolsp');
+	// Get the bounding box of the element
+	const boundingBox = await element2.boundingBox()
+	// Take a screenshot of the element
+	await page.screenshot({
+		path: 'screenshot.png',
+		clip: {
+		x: boundingBox.x,
+		y: boundingBox.y,
+		width: boundingBox.width,
+		height: boundingBox.height
+		}
+	})
+
+	for (let i = 0; i < loopTimes; i++){
+		await page.tap('.Ls261b.NMm5M.hhikbc')
+	}
+
+	await page.screenshot({ path: 'shotPath1.png' });
+	const result = await page.evaluate( () => {
+		var result = []
+		var arr = document.querySelectorAll('.QtzoWd')
+		if(arr && arr.length > 0){
+			for (let i = 0; i < arr.length; i++){
+				let img = arr[i].querySelector('img').src
+				result.push(img)
+			}
+		}
+		return result
+		}
+	)
+	return result
+}
+
 module.exports = {
 	accessKey :'o9zaFko-BJ4y7txnOpEiFJfPTalWI2LQLS3exIr1',
 	secretKey :'67dcr5piITYljpd8rkyEbDz0wugIRqOARK8Frvkk',
@@ -280,5 +356,7 @@ module.exports = {
 	sleep,
 	trainFilter,
 	testURL,
-	promise1
+	promise1,
+	getInfoFromGoogleTravel,
+	getPicsFromGoogleTravel
 };

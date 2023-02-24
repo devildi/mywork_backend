@@ -25,7 +25,9 @@ const {
 	accessKey,
 	secretKey,
 	bucket,
-	outerURL
+	outerURL,
+	getInfoFromGoogleTravel,
+	getPicsFromGoogleTravel
 } = require('../config');
 const fileUrl = path.join(__dirname, '../stations.txt')
 
@@ -45,7 +47,8 @@ class TripCtl {
 
 	async createItem(ctx){
 		const item = ctx.request.body
-		const {articleURL, picURL, articleType, album, author} = item
+		console.log(item)
+		const {articleURL, picURL, articleType, album, author, videoURL} = item
 		if(articleType === 2){
 			item.picURL = outerURL + picURL
 			album.forEach((item, index) => {
@@ -53,6 +56,7 @@ class TripCtl {
 			})
 		} else if(articleType === 3){
 			item.picURL = outerURL + picURL
+			item.videoURL = outerURL + videoURL
 		}
 		if(articleURL){
 			const article = await Item.findOne({articleURL: articleURL})
@@ -64,7 +68,7 @@ class TripCtl {
 			}
 		}else{
 			let newItem = await new Item(item).save()
-			ctx.body = newItem
+			ctx.body = 'newItem'
 		}
 	}
 
@@ -392,6 +396,16 @@ class TripCtl {
 		var putPolicy = new qiniu.rs.PutPolicy(options)
 		var uploadToken = putPolicy.uploadToken(mac)
 		ctx.body = uploadToken
+	}
+
+	async fetchInfo(ctx){
+		let info = await getInfoFromGoogleTravel()
+		ctx.body = info
+	}
+
+	async fetchImgs(ctx){
+		let info = await getPicsFromGoogleTravel()
+		ctx.body = info
 	}
 }
 
