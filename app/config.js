@@ -194,31 +194,34 @@ function promise1(client, url){
 			if(err){
 				reject()
 			}
-			//console.log('从GRPC回传的信息：',response.message);
+			console.log('从GRPC回传的信息：',response.message);
 			resolve(response.message)
 		});
 	})
 }
 
 const googleTravelURL = 'https://www.google.com/travel/things-to-do'
+const baiduBaike = 'https://baike.baidu.com/'
+const pageMock = 'https://mp.weixin.qq.com/s?__biz=MzIyMTM3MzE1MA==&mid=2247484651&idx=1&sn=2cbf9de89735555acbd30f456ec68b90&chksm=e83cf35adf4b7a4c25c72bdffc6b4c6bfa751d74a47a51b541b70f67bdc0ca020663fef050c2&token=1642341609&lang=zh_CN#rd'
 
-async function getInfoFromGoogleTravel(){
+async function getInfoFromGoogleTravel(des){
 	const browser = await puppeteer.launch({
 		args: ['--no-sandbox'],
 		dumpio: false
 	})
 	const page = await browser.newPage()
-	await page.goto(googleTravelURL, { waitUntil: 'networkidle2' })
+	await page.goto(baiduBaike, { waitUntil: 'networkidle2' })
 	const input = await page.$('input[type=text]')
-	await input.type('棋盘山')
+	await input.type(des)
 	await page.keyboard.press('Enter')
 	await sleep(5000)
-	const elementHandle = await page.$('.LyuOgc')
+	const elementHandle = await page.$('.lemma-summary.J-summary')
 	const elementContent = await elementHandle.evaluate(element => element.textContent)
 	return elementContent
 }
 
-async function getPicsFromGoogleTravel(){
+async function getPicsFromGoogleTravel(des){
+	console.log(des)
 	const browser = await puppeteer.launch({
 		args: ['--no-sandbox'],
 		dumpio: false
@@ -226,40 +229,30 @@ async function getPicsFromGoogleTravel(){
 	const page = await browser.newPage()
 	await page.goto(googleTravelURL, { waitUntil: 'networkidle2' })
 	const input = await page.$('input[type=text]')
-	await input.type('棋盘山')
+	await input.type(des || '棋盘山')
 	await page.keyboard.press('Enter')
 	await sleep(5000)
-	await page.screenshot({ path: 'shotPath0.png' });
-	const ele = await page.$('.QtzoWd');
-	const box = await ele.boundingBox();
-	const x = box.x + box.width / 2;
-	const y = box.y + box.height / 2;
-	await page.mouse.move(x, y);
+	
+	const ele = await page.$('.QtzoWd')
+	const box = await ele.boundingBox()
+	const x = box.x + box.width / 2
+	const y = box.y + box.height / 2
+	await page.mouse.move(x, y)
 	
 	const elementCount = await page.$$eval('.QtzoWd', elements => elements.length)
 	let loopTimes = (elementCount - 1) / 2
 	console.log(loopTimes)
-	await page.screenshot({ path: 'shotPath.png' });
-
-	const element2 = await page.$('.VfPpkd-BIzmGd.SaBhMc.NNFoTc.Hkd4je.E9mvxc.V0XOz.a2rVxf.VfPpkd-BIzmGd-OWXEXe-yolsp');
-	// Get the bounding box of the element
-	const boundingBox = await element2.boundingBox()
-	// Take a screenshot of the element
-	await page.screenshot({
-		path: 'screenshot.png',
-		clip: {
-		x: boundingBox.x,
-		y: boundingBox.y,
-		width: boundingBox.width,
-		height: boundingBox.height
+	//await page.screenshot({ path: 'shotPath.png' })
+	//await page.waitForSelector('.VfPpkd-LgbsSe.VfPpkd-LgbsSe-OWXEXe-MV7yeb.VfPpkd-LgbsSe-OWXEXe-Bz112c-M1Soyc.VfPpkd-LgbsSe-OWXEXe-dgl2Hf.b9hyVd.MQas1c.LQeN7.qhgRYc.CoZ57.V0XOz.a2rVxf.VfPpkd-ksKsZd-mWPk3d');
+	const buttonElements = await page.$('button.VfPpkd-LgbsSe.VfPpkd-LgbsSe-OWXEXe-MV7yeb.VfPpkd-LgbsSe-OWXEXe-Bz112c-M1Soyc.VfPpkd-LgbsSe-OWXEXe-dgl2Hf.b9hyVd.MQas1c.LQeN7.qhgRYc.CoZ57.V0XOz.a2rVxf.VfPpkd-ksKsZd-mWPk3d')
+	if(buttonElements){
+		console.log('---')
+		for (let i = 0; i < loopTimes; i++){
+			await buttonElements.click()
 		}
-	})
-
-	for (let i = 0; i < loopTimes; i++){
-		await page.tap('.Ls261b.NMm5M.hhikbc')
 	}
-
-	await page.screenshot({ path: 'shotPath1.png' });
+	
+	//await page.screenshot({ path: 'shotPath1.png' });
 	const result = await page.evaluate( () => {
 		var result = []
 		var arr = document.querySelectorAll('.QtzoWd')

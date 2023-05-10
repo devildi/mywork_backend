@@ -27,7 +27,8 @@ const {
 	bucket,
 	outerURL,
 	getInfoFromGoogleTravel,
-	getPicsFromGoogleTravel
+	getPicsFromGoogleTravel,
+	pageMock
 } = require('../config');
 const fileUrl = path.join(__dirname, '../stations.txt')
 
@@ -370,7 +371,7 @@ class TripCtl {
 		//await crawler_child_process(dataForCrawler, Info, from, flag)
 		ctx.body = Info
 	}
-//GRPC below
+	//GRPC below
 	async getStoryDetailByGRPC(ctx){
 		const url = ctx.request.query.url
 		const data = await promise1(client, url)
@@ -399,13 +400,18 @@ class TripCtl {
 	}
 
 	async fetchInfo(ctx){
-		let info = await getInfoFromGoogleTravel()
+		const des = ctx.request.query.des
+		let info = await getInfoFromGoogleTravel(des)
 		ctx.body = info
 	}
 
 	async fetchImgs(ctx){
-		let info = await getPicsFromGoogleTravel()
-		ctx.body = info
+		const des = ctx.request.query.des
+		let info = await getPicsFromGoogleTravel(des)
+		let res = info.filter((num) => {
+			return num !== '';
+		});
+		ctx.body = res
 	}
 }
 
