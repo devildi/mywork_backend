@@ -37,6 +37,7 @@ class TripCtl {
 		const trip = ctx.request.body
 		const tripData = await Trip.findOne({ uid: trip.uid });
 		if(tripData){
+			tripData.cover = trip.cover
 			tripData.detail = trip.detail
 			let trip1 = await tripData.save()
 			ctx.body = trip1
