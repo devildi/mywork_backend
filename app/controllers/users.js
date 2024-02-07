@@ -66,7 +66,7 @@ class UsersCtl {
     	io.emit('notification', JSON.stringify(newClient))
       ctx.body = JSON.stringify(newClient)
     } catch (error) {
-      console.log(error)
+      console.log('error')
     }
   }
 

@@ -35,7 +35,8 @@ const fileUrl = path.join(__dirname, '../stations.txt')
 class TripCtl {
 	async create(ctx){
 		const trip = ctx.request.body
-		const tripData = await Trip.findOne({ uid: trip.uid });
+		console.log(trip)
+		const tripData = await Trip.findOne({ uid: trip.uid })
 		if(tripData){
 			tripData.cover = trip.cover
 			tripData.detail = trip.detail
