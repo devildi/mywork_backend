@@ -18,27 +18,30 @@ function farmet(data){
 async function Excel(data, from){
 	farmet(data)
 	const workbook = new xls.Workbook()
-
 	try{
-		await workbook.xlsx.readFile(path.join(__dirname, `./${from}.xlsx`))
+		await workbook.xlsx.readFile(path.join(__dirname, `../results/${from}.xlsx`))
 		const sheet = workbook.getWorksheet('测试报表')
 		sheet.columns = [
-			{header: '城市', key: 'destination', width: 15},
+			{header: '车站', key: 'destination', width: 15},
+			{header: '城市', key: 'city', width: 15},
+			{header: '省', key: 'province', width: 15},
 			{header: '动车高铁', key: 'hasGOrD', width: 100},
 			{header: '夕发朝至', key: 'overNight', width: 100}
 		]
 		sheet.addRow(data)
-		await workbook.xlsx.writeFile(path.join(__dirname, `./${from}.xlsx`))
+		await workbook.xlsx.writeFile(path.join(__dirname, `../results/${from}.xlsx`))
 		console.log(`将${data.destination}站的信息写入Excel文件`)
 	}catch(err){
 		let sheet = workbook.addWorksheet('测试报表')
 		sheet.columns = [
-			{header: '城市', key: 'destination', width: 15},
+			{header: '车站', key: 'destination', width: 15},
+			{header: '城市', key: 'city', width: 15},
+			{header: '省', key: 'province', width: 15},
 			{header: '动车高铁', key: 'hasGOrD', width: 100},
 			{header: '夕发朝至', key: 'overNight', width: 100}
 		]
 		sheet.addRow(data)
-		await workbook.xlsx.writeFile(path.join(__dirname, `./${from}.xlsx`))
+		await workbook.xlsx.writeFile(path.join(__dirname, `../results/${from}.xlsx`))
 		console.log(`将${data.destination}站的信息写入Excel文件`)
 	}
 
@@ -52,7 +55,7 @@ function timeDefine(str){
 	return total
 }
 
-function trainFilter(destination, array){
+function trainFilter(destination, array, city, province){
 	let hasGOrD = []
 	let overNight = []
 	array.map(function(obj){
@@ -70,7 +73,9 @@ function trainFilter(destination, array){
 		return {
 			destination,
 			hasGOrD,
-			overNight
+			overNight,
+			city,
+			province
 		}
 	}
 }
@@ -185,7 +190,7 @@ async function crawler (array, Info, from, flag, index = 0){
 		await sleep(1000 * 60 * 10)
 		await crawler(array, Info, from, flag, index)
 	}
-	
+
 }
 
 function promise1(client, url){
@@ -269,6 +274,7 @@ async function getPicsFromGoogleTravel(des){
 }
 
 module.exports = {
+	tencentMapKey: 'GRCBZ-ZELKJ-H2FFV-FBSQT-OJM6T-ZSFK4',
 	accessKey :'o9zaFko-BJ4y7txnOpEiFJfPTalWI2LQLS3exIr1',
 	secretKey :'67dcr5piITYljpd8rkyEbDz0wugIRqOARK8Frvkk',
 	bucket: 'devildi',
@@ -340,8 +346,8 @@ module.exports = {
 	},
 	stationsURL: 'https://kyfw.12306.cn/otn/resources/js/framework/station_name.js',
 	mockData: [
-		{"stationsName":"北京北","stationsNameCHN":"beijingbei"},
-		{"stationsName":"上海","stationsNameCHN":"shanghai"}
+		{"stationsName":"北京北","stationsNameCHN":"beijingbei", "inWhichCity":"长沙","inWhichProvince":"湖南省"},
+		{"stationsName":"上海","stationsNameCHN":"shanghai", "inWhichCity":"长沙","inWhichProvince":"湖南省"}
 	],
 	crawler,
 	crawler_child_process,
