@@ -346,7 +346,7 @@ module.exports = {
 	},
 	stationsURL: 'https://kyfw.12306.cn/otn/resources/js/framework/station_name.js',
 	mockData: [
-		{"stationsName":"北京北","stationsNameCHN":"beijingbei", "inWhichCity":"长沙","inWhichProvince":"湖南省"},
+		{"stationsName":"长春","stationsNameCHN":"changchun", "inWhichCity":"长沙","inWhichProvince":"湖南省"},
 		{"stationsName":"上海","stationsNameCHN":"shanghai", "inWhichCity":"长沙","inWhichProvince":"湖南省"}
 	],
 	crawler,
