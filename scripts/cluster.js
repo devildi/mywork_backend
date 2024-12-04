@@ -1,39 +1,57 @@
-const puppeteer = require('puppeteer')
-const fs = require('fs')
-const path = require('path')
+const { Cluster } = require('puppeteer-cluster');
+const puppeteer = require('puppeteer');
+const fs = require('fs');
+const path = require('path');
+
 const {
     sleep,
+    spliceArray,
     testURL,
+    trainFilter,
     Excel,
-    mockData,
-    trainFilter
-} = require('../app/config')
-const fileUrl = path.join(__dirname, '../results/finalStationInfo.txt')
+} = require('../app/config');
 
-let browser = null
-let from = 'shenyang'
-const data = fs.readFileSync(fileUrl)
-console.log('读车站信息文件成功！')
-let stationsArray = JSON.parse(data.toString('utf-8'))
-crawler(stationsArray, from, stationsArray.length)
+(async () => {
+    let from = 'shenyang'
+    const fileUrl = path.join(__dirname, '../results/finalStationInfo.txt');
+    const data = fs.readFileSync(fileUrl)
+    console.log('读车站信息文件成功！')
+    let stationsArray = JSON.parse(data.toString('utf-8'))
+    let testData = stationsArray.splice(0, 100)
+    let testArray = spliceArray(testData, 50)
+    const cluster = await Cluster.launch({
+        concurrency: Cluster.CONCURRENCY_CONTEXT,
+        maxConcurrency: testArray.length,
+		puppeteerOptions: {
+            headless: true,
+            args: ['--no-sandbox', '--disable-setuid-sandbox'],
+        },
+		closeOnComplete: false
+    })
 
-async function crawler (array, from, flag, index = 0){
+    await cluster.task(async ({ page, data }) => {
+        try {
+            await crawler (cluster.browser, page, data.url, data.array, from, data.array.length)
+        } catch (error) {
+            console.log(error)
+        }
+    })
+
+    for (let i = 0; i < testArray.length; i++) {
+        cluster.queue({ url: testURL, array: testArray[i]});
+    }
+
+    await cluster.idle();
+    await cluster.close();
+})()
+
+async function crawler (browser, page, url, array, from, flag, index = 0){
     let arrFrom = [...from]
-	let item = array[index]
-	if(!browser){
-		browser = await puppeteer.launch({
-			args: ['--no-sandbox'],
-			dumpio: false
-		})
-	}
-
+    let item = array[index]
     let arrTo = [...item.stationsNameCHN]
 	console.log(`开始爬${item.stationsName}站：`)
-
-    const page = await browser.newPage()
-	await page.goto(testURL, { waitUntil: 'networkidle2' })
-
     try {
+        await page.goto(url, { waitUntil: 'networkidle0' })
 		if(page.url() === "https://www.12306.cn/mormhweb/logFiles/error.html"){
 			console.log('爬虫被BAN！系统准备休眠10mins！')
 			await sleep(1000 * 60 * 10)
@@ -44,7 +62,6 @@ async function crawler (array, from, flag, index = 0){
 		if(warningBtn){
 			await page.tap('#qd_closeDefaultWarningWindowDialog_id')
 		}
-
 		await page.tap('#fromStationText')
 		for (let i = 0; i < arrFrom.length; i++){
 			await page.keyboard.press(arrFrom[i]);
@@ -93,28 +110,21 @@ async function crawler (array, from, flag, index = 0){
 				await Excel(resultInfo, from)
 			}
 		}
-		await page.close()
 		console.log(`${item.stationsName}站已经爬完！${index + 1}/${flag}`)
         console.log('=================================')
 		index++
 		if(index === flag){
 			console.log('爬虫结束！')
-			await browser.close();
+
 		} else{
 			await sleep(2000)
-			await crawler(array, from, flag, index)
+			await crawler(browser, page, url, array, from, flag, index)
 		}
 	} catch (error) {
 		console.log(`爬虫出错，10min后重新爬${item.stationsName}站！`)
         console.log(error)
-		if(page){
-			await page.close()
-		}
-		if(browser){
-			await browser.close()
-			browser = null
-		}
+		//await page.screenshot({ path: 'example.png' });
 		await sleep(1000 * 60 * 10)
-		await crawler(array, from, flag, index)
+		await crawler(browser, page, url, array, from, flag, index)
 	}
 }

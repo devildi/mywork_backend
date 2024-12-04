@@ -56,6 +56,7 @@ function timeDefine(str){
 }
 
 function trainFilter(destination, array, city, province){
+	//console.log(array)
 	let hasGOrD = []
 	let overNight = []
 	array.map(function(obj){
@@ -273,6 +274,25 @@ async function getPicsFromGoogleTravel(des){
 	return result
 }
 
+function spliceArray (array, step){
+	let newArray = []
+	let loopTimes = Math.ceil(array.length / step)
+	for(let i = 0 ; i < loopTimes ; i++){
+		let cache = array.splice(0, step)
+		newArray.push(cache)
+	}
+	return newArray
+}
+
+function formatTimeDiff(ms) {
+    const days = Math.floor(ms / (1000 * 60 * 60 * 24)); // 天数
+    const hours = Math.floor((ms % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60)); // 小时
+    const minutes = Math.floor((ms % (1000 * 60 * 60)) / (1000 * 60)); // 分钟
+    const seconds = Math.floor((ms % (1000 * 60)) / 1000); // 秒
+
+    return `${days}天 ${hours}小时 ${minutes}分钟 ${seconds}秒`;
+}
+
 module.exports = {
 	tencentMapKey: 'GRCBZ-ZELKJ-H2FFV-FBSQT-OJM6T-ZSFK4',
 	accessKey :'o9zaFko-BJ4y7txnOpEiFJfPTalWI2LQLS3exIr1',
@@ -357,5 +377,7 @@ module.exports = {
 	testURL,
 	promise1,
 	getInfoFromGoogleTravel,
-	getPicsFromGoogleTravel
+	getPicsFromGoogleTravel,
+	spliceArray,
+	formatTimeDiff
 };
