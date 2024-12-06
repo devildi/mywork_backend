@@ -6,16 +6,19 @@ const {
     testURL,
     Excel,
     mockData,
-    trainFilter
+    trainFilter,
+	formatTimeDiff
 } = require('../app/config')
 const fileUrl = path.join(__dirname, '../results/finalStationInfo.txt')
 
+const timestamp1 = Date.now()
 let browser = null
 let from = 'shenyang'
 const data = fs.readFileSync(fileUrl)
 console.log('读车站信息文件成功！')
 let stationsArray = JSON.parse(data.toString('utf-8'))
-crawler(stationsArray, from, stationsArray.length)
+
+crawler(mockData, from, mockData.length)
 
 async function crawler (array, from, flag, index = 0){
     let arrFrom = [...from]
@@ -76,11 +79,13 @@ async function crawler (array, from, flag, index = 0){
 				var arr = document.querySelectorAll('.ticket-info')
 				if(arr && arr.length > 0){
 					for (let i = 0; i < arr.length; i++){
-						let No = arr[i].querySelector('.train > div > a').innerText
-						let depart = arr[i].querySelector('.cds>.start-t ').innerText
-						let arrive = arr[i].querySelector('.cds>.color999').innerText
-						let duration = arr[i].querySelector('.ls>strong').innerText
-						result.push({No, depart, arrive, duration})
+						if(arr[i].querySelector('.ls>strong')){
+							let No = arr[i].querySelector('.train > div > a').innerText
+							let depart = arr[i].querySelector('.cds>.start-t ').innerText
+							let arrive = arr[i].querySelector('.cds>.color999').innerText
+							let duration = arr[i].querySelector('.ls>strong').innerText
+							result.push({No, depart, arrive, duration})
+						}
 					}
 				}
 				return result
@@ -94,8 +99,7 @@ async function crawler (array, from, flag, index = 0){
 			}
 		}
 		await page.close()
-		console.log(`${item.stationsName}站已经爬完！${index + 1}/${flag}`)
-        console.log('=================================')
+		console.log(`${item.stationsName}站已经爬完！${index + 1}/${flag}，已经用时${formatTimeDiff(Date.now() - timestamp1)}`)
 		index++
 		if(index === flag){
 			console.log('爬虫结束！')

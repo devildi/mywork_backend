@@ -16,8 +16,9 @@ function farmet(data){
 }
 
 async function Excel(data, from){
-	farmet(data)
+	let farmetData = farmet(data)
 	const workbook = new xls.Workbook()
+	//console.log(farmetData)
 	try{
 		await workbook.xlsx.readFile(path.join(__dirname, `../results/${from}.xlsx`))
 		const sheet = workbook.getWorksheet('测试报表')
@@ -25,26 +26,27 @@ async function Excel(data, from){
 			{header: '车站', key: 'destination', width: 15},
 			{header: '城市', key: 'city', width: 15},
 			{header: '省', key: 'province', width: 15},
-			{header: '动车高铁', key: 'hasGOrD', width: 100},
-			{header: '夕发朝至', key: 'overNight', width: 100}
+			{header: '动车高铁', key: 'hasGOrD', width: 50},
+			{header: '夕发朝至', key: 'overNight', width: 50},
+			{header: '一日游', key: 'daytrip', width: 50}
 		]
-		sheet.addRow(data)
+		sheet.addRow(farmetData)
 		await workbook.xlsx.writeFile(path.join(__dirname, `../results/${from}.xlsx`))
-		console.log(`将${data.destination}站的信息写入Excel文件`)
+		console.log(`将${farmetData.destination}站的信息写入Excel文件`)
 	}catch(err){
 		let sheet = workbook.addWorksheet('测试报表')
 		sheet.columns = [
 			{header: '车站', key: 'destination', width: 15},
 			{header: '城市', key: 'city', width: 15},
 			{header: '省', key: 'province', width: 15},
-			{header: '动车高铁', key: 'hasGOrD', width: 100},
-			{header: '夕发朝至', key: 'overNight', width: 100}
+			{header: '动车高铁', key: 'hasGOrD', width: 50},
+			{header: '夕发朝至', key: 'overNight', width: 50},
+			{header: '一日游', key: 'daytrip', width: 50}
 		]
-		sheet.addRow(data)
+		sheet.addRow(farmetData)
 		await workbook.xlsx.writeFile(path.join(__dirname, `../results/${from}.xlsx`))
-		console.log(`将${data.destination}站的信息写入Excel文件`)
+		console.log(`将${farmetData.destination}站的信息写入Excel文件`)
 	}
-
 }
 
 function timeDefine(str){
@@ -59,16 +61,19 @@ function trainFilter(destination, array, city, province){
 	//console.log(array)
 	let hasGOrD = []
 	let overNight = []
+	let daytrip = []
 	array.map(function(obj){
 		if(obj.No.startsWith('G') || obj.No.startsWith('D')){
 			hasGOrD.push(obj.No)
-		} else {
-			if(timeDefine(obj.depart) > 17 * 60 && timeDefine(obj.arrive) < 12 * 60 && timeDefine(obj.arrive) > 4 * 60 && timeDefine(obj.duration)< 13 * 60){
-				overNight.push(obj.No)
-			}
+		}
+		if(timeDefine(obj.depart) < 1 * 60 || timeDefine(obj.depart) > 17 * 60 && timeDefine(obj.arrive) < 12 * 60 && timeDefine(obj.arrive) > 4 * 60 && timeDefine(obj.duration)< 13 * 60){
+			overNight.push(obj.No)	
+		}
+		if(timeDefine(obj.arrive) < 12 * 60 && timeDefine(obj.depart) > 7 * 60 && timeDefine(obj.duration)<= 2 * 60){
+			daytrip.push(obj.No)
 		}
 	})
-	if(hasGOrD.length === 0 && overNight.length === 0){
+	if(hasGOrD.length === 0 && overNight.length === 0 && daytrip.length === 0){
 		return false
 	}else {
 		return {
@@ -76,7 +81,8 @@ function trainFilter(destination, array, city, province){
 			hasGOrD,
 			overNight,
 			city,
-			province
+			province,
+			daytrip
 		}
 	}
 }
@@ -149,11 +155,13 @@ async function crawler (array, Info, from, flag, index = 0){
 				var arr = document.querySelectorAll('.ticket-info')
 				if(arr && arr.length > 0){
 					for (let i = 0; i < arr.length; i++){
-						let No = arr[i].querySelector('.train > div > a').innerText
-						let depart = arr[i].querySelector('.cds>.start-t ').innerText
-						let arrive = arr[i].querySelector('.cds>.color999').innerText
-						let duration = arr[i].querySelector('.ls>strong').innerText
-						result.push({No, depart, arrive, duration})
+						if(arr[i].querySelector('.ls>strong')){
+							let No = arr[i].querySelector('.train > div > a').innerText
+							let depart = arr[i].querySelector('.cds>.start-t ').innerText
+							let arrive = arr[i].querySelector('.cds>.color999').innerText
+							let duration = arr[i].querySelector('.ls>strong').innerText
+							result.push({No, depart, arrive, duration})
+						}
 					}
 				}
 				return result
@@ -293,6 +301,16 @@ function formatTimeDiff(ms) {
     return `${days}天 ${hours}小时 ${minutes}分钟 ${seconds}秒`;
 }
 
+function filterByProvinceAndCity(array, string, isProvince=true){
+	let newArr = []
+	if(isProvince){
+		newArr = array.filter(item => item.inWhichProvince === string)
+	} else {
+
+	}
+	return newArr
+}
+
 module.exports = {
 	tencentMapKey: 'GRCBZ-ZELKJ-H2FFV-FBSQT-OJM6T-ZSFK4',
 	accessKey :'o9zaFko-BJ4y7txnOpEiFJfPTalWI2LQLS3exIr1',
@@ -366,8 +384,11 @@ module.exports = {
 	},
 	stationsURL: 'https://kyfw.12306.cn/otn/resources/js/framework/station_name.js',
 	mockData: [
-		{"stationsName":"长春","stationsNameCHN":"changchun", "inWhichCity":"长沙","inWhichProvince":"湖南省"},
-		{"stationsName":"上海","stationsNameCHN":"shanghai", "inWhichCity":"长沙","inWhichProvince":"湖南省"}
+		{"stationsName":"本溪新城","stationsNameCHN":"benxixincheng","inWhichCity":"本溪","inWhichProvince":"辽宁省"},
+		// {"stationsName":"长春","stationsNameCHN":"changchun", "inWhichCity":"长沙","inWhichProvince":"湖南省"},
+		// {"stationsName":"上海","stationsNameCHN":"shanghai", "inWhichCity":"长沙","inWhichProvince":"湖南省"},
+		// {"stationsName":"横道河子","stationsNameCHN":"hengdaohezi","inWhichCity":"牡丹江","inWhichProvince":"黑龙江省"},
+		// {"stationsName":"铁岭","stationsNameCHN":"tieling","inWhichCity":"铁岭","inWhichProvince":"辽宁省"}
 	],
 	crawler,
 	crawler_child_process,
@@ -379,5 +400,6 @@ module.exports = {
 	getInfoFromGoogleTravel,
 	getPicsFromGoogleTravel,
 	spliceArray,
-	formatTimeDiff
+	formatTimeDiff,
+	filterByProvinceAndCity
 };
