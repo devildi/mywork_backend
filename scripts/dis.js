@@ -1,3 +1,4 @@
+//多进程并发版本
 const { Cluster } = require('puppeteer-cluster');
 const puppeteer = require('puppeteer');
 const fs = require('fs');
@@ -10,20 +11,23 @@ const {
     trainFilter,
     Excel,
     formatTimeDiff,
-	filterByProvinceAndCity
+	filterByProvinceAndCity,
+	sleepWithHeartbeat1
 } = require('../app/config')
 
 let from = 'shenyang'
+let to = '辽宁省'
 const fileUrl = path.join(__dirname, '../results/finalStationInfo.txt');
 const data = fs.readFileSync(fileUrl)
 console.log('读车站信息文件成功！')
 let stationsArray = JSON.parse(data.toString('utf-8'))
 //let testData = stationsArray.splice(0, 100)
-let dataForSpider = filterByProvinceAndCity(stationsArray, '辽宁省')
-let step = 10
+let dataForSpider = filterByProvinceAndCity(stationsArray, to).splice(0, 50)
+let step = 5
 const timestamp1 = Date.now()
 let queue = []
 let pause = false
+let sleepTimes = 0
 
 startMission(dataForSpider)
 	
@@ -33,12 +37,13 @@ async function startMission(array){
 	await cluster(cache)
 	if(pause){
 		await sleep(1000 * 60 * 10)
-		pause = false
+		//await sleepWithHeartbeat1(1000 * 60 * 10, 1000 * 60 * 1, heartbeat, page1)
+		sleepTimes++
 		startMission(cache)
 	}
 	await write2CSV()
 	if(array.length === 0){
-		console.log(`爬虫结束，总用时${formatTimeDiff(Date.now() - timestamp1)}`)
+		console.log(`爬虫结束，总用时${formatTimeDiff(Date.now() - timestamp1)}，休眠${sleepTimes}次`)
 	}else {
 		console.log(`还剩${array.length}个车站，已经用时${formatTimeDiff(Date.now() - timestamp1)}`)
 		startMission(array)
@@ -67,17 +72,20 @@ async function cluster(dataArray){
 			} else {
 				console.log(`爬${data.item.stationsName}站出错，本次并发中断，错误信息：${error.message}！系统准备休眠10mins！=====`)
 			}
-			await cluster.close()
+			//await cluster.close()
 			//throw new Error(`爬取失败: ${data.item.stationsName}`)
-        }
+        }finally {
+			// 任务完成后关闭页面，确保资源被回收
+			await page.close()  // 关闭页面
+		}
     })
 
-	cluster.on('taskerror', async (err, data) => {
-		console.error(`任务失败: ${data}: ${err.message},暂停集群`);
-		pause = true;
-		await cluster.close()
-		console.log(data)
-	})
+	// cluster.on('taskerror', async (err, data) => {
+	// 	console.error(`任务失败: ${JSON.stringify(data)}: ${err.message},暂停集群`)
+	// 	pause = true;
+	// 	await cluster.close()
+	// 	//console.log(data)
+	// })
 
     for (let i = 0; i < dataArray.length; i++) {
         cluster.queue({ url: testURL, item: dataArray[i]});
@@ -85,7 +93,9 @@ async function cluster(dataArray){
 
     await cluster.idle()
     await cluster.close()
-	console.log('=====本次并发结束=====')
+	if(!pause){
+		console.log('=====本次并发结束=====')
+	}
 }
 
 async function write2CSV(){
@@ -97,7 +107,7 @@ async function write2CSV(){
 }
 
 async function toCSV(array, index=0){
-	await Excel(array[index], from)
+	await Excel(array[index], to)
 	index++
 	if(index === array.length){
 		console.log('本次并发数据已写入====================')
@@ -129,10 +139,10 @@ async function crawler (page, url, item, from){
 	while(true){
 		const className = await page.$eval('#query_ticket', element => element.className)
 		if(className === 'btn92s'){
-			console.log('Ajax请求完成！')
+			console.log(`爬${item.stationsName}站的Ajax请求完成！`)
 			break;
 		} else {
-			console.log('等待Ajax请求加载完成！')
+			console.log(`等待爬${item.stationsName}站的Ajax请求加载完成！`)
 			await sleep(2000)
 		}
 	}
@@ -162,4 +172,14 @@ async function crawler (page, url, item, from){
 		}
 	}
 	console.log(`${item.stationsName}站已经爬完`)
+}
+
+const heartbeat = async (page) => {
+	try {
+	  await page.evaluate(() => {
+		console.log('Heartbeat: Keeping the page active');
+	  })
+	} catch (err) {
+	  console.error('Error during heartbeat:', err.message);
+	}
 }
