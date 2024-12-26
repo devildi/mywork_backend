@@ -14,31 +14,39 @@ const {
 	sleepWithHeartbeat
 } = require('../app/config')
 
+const fileUrl = path.join(__dirname, '../results/finalStationInfo.txt')
+
 let step = 5
 let pause = false
 const timestamp1 = Date.now()
 let sleepTimes = 0
 let from = 'shenyang'
-let to = '辽宁省'
+let to = '黑龙江省'
 
-startMission(mockData)
+const data = fs.readFileSync(fileUrl)
+console.log('读车站信息文件成功！')
+let stationsArray = JSON.parse(data.toString('utf-8'))
+let dataForSpider = filterByProvinceAndCity(stationsArray, to)
+
+startMission(dataForSpider)
 
 async function startMission(array){
 	let cache = []
-	cache = !pause ? array.splice(0, step) : array
+	cache = array.splice(0, step)
 	let results = await fetchMultiplePagesWithLimit(cache, step, from)
-	
 	if(pause){
 		await sleep(1000 * 60 * 10)
 		sleepTimes++
-		startMission(cache)
-	}
-	await write2CSV(results)
-	if(array.length === 0){
-		console.log(`爬虫结束，总用时${formatTimeDiff(Date.now() - timestamp1)}，休眠${sleepTimes}次`)
-	}else {
-		console.log(`还剩${array.length}个车站，已经用时${formatTimeDiff(Date.now() - timestamp1)}`)
-		startMission(array)
+		await startMission([...cache, ...array])
+	} else {
+		await write2CSV(results)
+		if(array.length === 0){
+			console.log(`爬虫结束，总用时${formatTimeDiff(Date.now() - timestamp1)}，休眠${sleepTimes}次`)
+			return
+		}else {
+			console.log(`还剩${array.length}个车站，已经用时${formatTimeDiff(Date.now() - timestamp1)}`)
+			await startMission(array)
+		}
 	}
 }
 
@@ -50,12 +58,13 @@ async function write2CSV(array, index=0){
 	if(index === array.length){
 		console.log('本次并发数据已写入====================')
 	} else {
-		write2CSV(array, index)
+		await write2CSV(array, index)
 	}
 }
 
 async function fetchMultiplePagesWithLimit(array, maxConcurrency, from) {
 	try{
+		pause = false
 		const results = await Promise.all(array.map(item => crawler(testURL, item, from)))
 		return results
 	}catch(err){

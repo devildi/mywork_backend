@@ -16,37 +16,39 @@ const {
 } = require('../app/config')
 
 let from = 'shenyang'
-let to = '辽宁省'
+let to = '吉林省'
 const fileUrl = path.join(__dirname, '../results/finalStationInfo.txt');
 const data = fs.readFileSync(fileUrl)
 console.log('读车站信息文件成功！')
 let stationsArray = JSON.parse(data.toString('utf-8'))
 //let testData = stationsArray.splice(0, 100)
-let dataForSpider = filterByProvinceAndCity(stationsArray, to).splice(0, 50)
+let dataForSpider = filterByProvinceAndCity(stationsArray, to)
 let step = 5
 const timestamp1 = Date.now()
 let queue = []
 let pause = false
 let sleepTimes = 0
 
-startMission(dataForSpider)
+startMission(stationsArray)
 	
 async function startMission(array){
 	let cache = []
-	cache = !pause ? array.splice(0, step) : array
+	cache = array.splice(0, step)
 	await cluster(cache)
 	if(pause){
 		await sleep(1000 * 60 * 10)
 		//await sleepWithHeartbeat1(1000 * 60 * 10, 1000 * 60 * 1, heartbeat, page1)
 		sleepTimes++
-		startMission(cache)
-	}
-	await write2CSV()
-	if(array.length === 0){
-		console.log(`爬虫结束，总用时${formatTimeDiff(Date.now() - timestamp1)}，休眠${sleepTimes}次`)
-	}else {
-		console.log(`还剩${array.length}个车站，已经用时${formatTimeDiff(Date.now() - timestamp1)}`)
-		startMission(array)
+		await startMission([...cache, ...array])
+	} else {
+		await write2CSV()
+		if(array.length === 0){
+			console.log(`爬虫结束，总用时${formatTimeDiff(Date.now() - timestamp1)}，休眠${sleepTimes}次`)
+			return
+		}else {
+			console.log(`还剩${array.length}个车站，已经用时${formatTimeDiff(Date.now() - timestamp1)}`)
+			await startMission(array)
+		}
 	}
 }
 
@@ -67,6 +69,7 @@ async function cluster(dataArray){
             await crawler (page, data.url, data.item, from)
         } catch (error) {
 			pause = true
+			queue = []
 			if(page.url() === "https://www.12306.cn/mormhweb/logFiles/error.html"){
 				console.log(`爬${data.item.stationsName}站出错，错误信息：${error.message}！本次并发中断，爬虫被BAN！系统准备休眠10mins！=====`)
 			} else {
@@ -112,7 +115,7 @@ async function toCSV(array, index=0){
 	if(index === array.length){
 		console.log('本次并发数据已写入====================')
 	} else {
-		toCSV(array, index)
+		await toCSV(array, index)
 	}
 }
 

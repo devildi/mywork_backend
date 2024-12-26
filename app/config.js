@@ -15,12 +15,12 @@ function farmet(data){
 	return data
 }
 
-async function Excel(data, from){
+async function Excel(data, to = '全国'){
 	let farmetData = farmet(data)
 	const workbook = new xls.Workbook()
 	//console.log(farmetData)
 	try{
-		await workbook.xlsx.readFile(path.join(__dirname, `../results/${from}.xlsx`))
+		await workbook.xlsx.readFile(path.join(__dirname, `../results/${to}.xlsx`))
 		const sheet = workbook.getWorksheet('测试报表')
 		sheet.columns = [
 			{header: '车站', key: 'destination', width: 15},
@@ -31,7 +31,7 @@ async function Excel(data, from){
 			{header: '一日游', key: 'daytrip', width: 50}
 		]
 		sheet.addRow(farmetData)
-		await workbook.xlsx.writeFile(path.join(__dirname, `../results/${from}.xlsx`))
+		await workbook.xlsx.writeFile(path.join(__dirname, `../results/${to}.xlsx`))
 		console.log(`将${farmetData.destination}站的信息写入Excel文件`)
 	}catch(err){
 		let sheet = workbook.addWorksheet('测试报表')
@@ -44,7 +44,7 @@ async function Excel(data, from){
 			{header: '一日游', key: 'daytrip', width: 50}
 		]
 		sheet.addRow(farmetData)
-		await workbook.xlsx.writeFile(path.join(__dirname, `../results/${from}.xlsx`))
+		await workbook.xlsx.writeFile(path.join(__dirname, `../results/${to}.xlsx`))
 		console.log(`将${farmetData.destination}站的信息写入Excel文件`)
 	}
 }
@@ -301,15 +301,38 @@ function formatTimeDiff(ms) {
     return `${days}天 ${hours}小时 ${minutes}分钟 ${seconds}秒`;
 }
 
-function filterByProvinceAndCity(array, string, isProvince=true){
+function filterByProvinceAndCity(array, string){
 	let newArr = []
-	if(isProvince){
-		newArr = array.filter(item => item.inWhichProvince === string)
-	} else {
-
-	}
+	newArr = array.filter(item => item.inWhichProvince === string)
 	return newArr
 }
+
+async function sleepWithHeartbeat(browser, duration, interval = 1 * 60 * 1000) {
+	const page = (await browser.pages())[0]; // 获取第一个页面
+	const endTime = Date.now() + duration;
+  
+	while (Date.now() < endTime) {
+	  await new Promise(resolve => setTimeout(resolve, interval)); // 等待心跳间隔
+	  try {
+		await page.title(); // 获取页面标题，维持活动
+		console.log('Heartbeat sent to keep browser active.');
+	  } catch (error) {
+		console.error('Error during heartbeat:', error.message);
+		throw error; // 如果心跳操作失败，抛出异常
+	  }
+	}
+}
+
+async function sleepWithHeartbeat1(duration, interval, heartbeat, page) {
+	const steps = Math.ceil(duration / interval);
+	for (let i = 0; i < steps; i++) {
+	  await new Promise(resolve => setTimeout(resolve, interval))
+	  console.log(`Heartbeat ${i + 1}/${steps}`);
+	  if (heartbeat) {
+		await heartbeat(page); // 调用心跳操作
+	  }
+	}
+  }
 
 module.exports = {
 	tencentMapKey: 'GRCBZ-ZELKJ-H2FFV-FBSQT-OJM6T-ZSFK4',
@@ -385,10 +408,10 @@ module.exports = {
 	stationsURL: 'https://kyfw.12306.cn/otn/resources/js/framework/station_name.js',
 	mockData: [
 		{"stationsName":"本溪新城","stationsNameCHN":"benxixincheng","inWhichCity":"本溪","inWhichProvince":"辽宁省"},
-		// {"stationsName":"长春","stationsNameCHN":"changchun", "inWhichCity":"长沙","inWhichProvince":"湖南省"},
-		// {"stationsName":"上海","stationsNameCHN":"shanghai", "inWhichCity":"长沙","inWhichProvince":"湖南省"},
-		// {"stationsName":"横道河子","stationsNameCHN":"hengdaohezi","inWhichCity":"牡丹江","inWhichProvince":"黑龙江省"},
-		// {"stationsName":"铁岭","stationsNameCHN":"tieling","inWhichCity":"铁岭","inWhichProvince":"辽宁省"}
+		{"stationsName":"长春","stationsNameCHN":"changchun", "inWhichCity":"长沙","inWhichProvince":"湖南省"},
+		{"stationsName":"上海","stationsNameCHN":"shanghai", "inWhichCity":"长沙","inWhichProvince":"湖南省"},
+		{"stationsName":"横道河子","stationsNameCHN":"hengdaohezi","inWhichCity":"牡丹江","inWhichProvince":"黑龙江省"},
+		{"stationsName":"铁岭","stationsNameCHN":"tieling","inWhichCity":"铁岭","inWhichProvince":"辽宁省"}
 	],
 	crawler,
 	crawler_child_process,
@@ -401,5 +424,7 @@ module.exports = {
 	getPicsFromGoogleTravel,
 	spliceArray,
 	formatTimeDiff,
-	filterByProvinceAndCity
+	filterByProvinceAndCity,
+	sleepWithHeartbeat,
+	sleepWithHeartbeat1
 };
