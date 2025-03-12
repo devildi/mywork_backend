@@ -32,7 +32,11 @@ const {
 	getStoryByAuthor,
 	getLikeOrCollectStoryByAuthor,
 	fetchInfo,
-	fetchImgs
+	fetchImgs,
+	previewImgs,
+	updatePointImg,
+	getBingImg,
+	getImgGRPC
 } = require('../controllers/trip');
 
 router.get('/getUploadToken', getUploadToken);
@@ -60,9 +64,12 @@ router.post('/weappUser', weappUser)
 router.post('/clickLike', clickLike)
 router.post('/poComment', poComment)
 router.get('/ticketsInfo', ticketsInfo)
-router.get('/getStoryDetailByGRPC', getStoryDetailByGRPC)
 router.get('/ticketsInfo', ticketsInfo)
 router.get('/fetchInfo', fetchInfo)
 router.get('/fetchImgs', fetchImgs)
-
+router.get('/previewImgs', previewImgs)
+router.post('/updatePointImg', updatePointImg)
+router.get('/getBingImg', getBingImg)
+router.get('/getStoryDetailByGRPC', getStoryDetailByGRPC)
+router.get('/getImgGRPC', getImgGRPC)
 module.exports = router;

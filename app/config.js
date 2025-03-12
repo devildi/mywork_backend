@@ -204,7 +204,19 @@ async function crawler (array, Info, from, flag, index = 0){
 
 function promise1(client, url){
 	return new Promise((resolve, reject) => {
-		client.sayHello({name: url}, (err, response) => {
+		client.SayHello({name: url}, (err, response) => {
+			if(err){
+				reject()
+			}
+			console.log('从GRPC回传的信息：',response.message);
+			resolve(response.message)
+		});
+	})
+}
+
+function promise2(client, str){
+	return new Promise((resolve, reject) => {
+		client.GetPic({name: str}, (err, response) => {
 			if(err){
 				reject()
 			}
@@ -292,6 +304,15 @@ function spliceArray (array, step){
 	return newArray
 }
 
+/**
+ * 将二维数组转换为一维数组
+ * @param {Array<Array>} array - 输入的二维数组
+ * @returns {Array} - 转换后的一维数组
+ */
+function flattenArray(array) {
+    return [].concat(...array);
+}
+
 function formatTimeDiff(ms) {
     const days = Math.floor(ms / (1000 * 60 * 60 * 24)); // 天数
     const hours = Math.floor((ms % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60)); // 小时
@@ -333,6 +354,111 @@ async function sleepWithHeartbeat1(duration, interval, heartbeat, page) {
 	  }
 	}
   }
+
+/**
+ * 从必应图片搜索获取第一张图片链接
+ * @param {string} keyword - 搜索关键词
+ * @returns {Promise<string>} - 返回图片链接
+ */
+async function getBingFirstImage(keyword = '棋盘山') {
+    const browser = await puppeteer.launch({
+        args: ['--no-sandbox', 
+			'--start-maximized',  
+			'--disable-web-security',
+			'--disable-features=IsolateOrigins,site-per-process'],
+        dumpio: false,
+		//headless: false,
+		defaultViewport: null,
+    });
+    
+    try {
+        const page = await browser.newPage();  
+        // 存储图片URL
+        let targetImageUrl = null;
+        // 监听新页面的创建
+        browser.on('targetcreated', async (target) => {
+            if (target.type() === 'page') {
+                const newPage = await target.page();
+                console.log('新页面已打开');
+                // 获取新页面的标题
+                targetImageUrl = await newPage.url();
+                console.log('新页面的标题:', targetImageUrl);
+                // 关闭新页面（可选）
+                await newPage.close();
+            }
+        });
+        // 监听网络请求
+        // await page.setRequestInterception(true);
+        // page.on('request', request => {
+        //     if (request.resourceType() === 'image') {
+        //         const url = request.url();
+        //         if (url.includes('th.bing.com/th') && !url.includes('base64')) {
+        //             targetImageUrl = url;
+        //         }
+        //         request.abort();
+        //     } else {
+        //         request.continue();
+        //     }
+        // });
+
+        await page.goto('https://cn.bing.com/images', { 
+            waitUntil: 'networkidle2',
+            timeout: 30000
+        });
+
+        // 找到搜索框并输入关键词
+        await page.type('input[name="q"]', keyword);
+        await page.keyboard.press('Enter');
+
+		// 等待一下确保结果完全加载
+        await new Promise(resolve => setTimeout(resolve, 2000));
+        
+        // 等待搜索结果加载
+        // await page.waitForSelector('#mmComponent_images_2', { 
+        //     timeout: 5000,
+        //     visible: true
+        // });
+        
+        // 点击第一个图片
+        const firstImage = await page.$('.mimg');
+        if (firstImage) {
+            await firstImage.click();
+            await new Promise(resolve => setTimeout(resolve, 3000));
+
+			await page.waitForFunction(() => {
+				const iframe = document.querySelector('.insightsOverlay');
+				return iframe && getComputedStyle(iframe).display !== 'none';
+			}, { timeout: 5000 });
+	
+			// 2. 获取 iframe 元素句柄
+			const iframeHandle = await page.$('iframe.insightsOverlay');
+			
+			// 3. 转换为 Frame 上下文
+			const frame = await iframeHandle.contentFrame();
+			
+			// 4. 在 iframe 内操作
+			const viewButton = await frame.waitForSelector('#actionbar > ul > li.imgsrcc > div', {
+				visible: true,
+				timeout: 5000
+			});
+			// 5. 点击按钮（触发新窗口
+			await viewButton.click()
+			await new Promise(resolve => setTimeout(resolve, 2000));
+
+			//await new Promise(resolve => setTimeout(resolve, 2000));
+        }
+
+        await browser.close();
+        return targetImageUrl;
+
+    } catch (error) {
+        console.error('Error in getBingFirstImage:', error.message);
+        if (browser) {
+            await browser.close();
+        }
+        return null;
+    }
+}
 
 module.exports = {
 	tencentMapKey: 'GRCBZ-ZELKJ-H2FFV-FBSQT-OJM6T-ZSFK4',
@@ -420,11 +546,14 @@ module.exports = {
 	trainFilter,
 	testURL,
 	promise1,
+	promise2,
 	getInfoFromGoogleTravel,
 	getPicsFromGoogleTravel,
 	spliceArray,
 	formatTimeDiff,
 	filterByProvinceAndCity,
 	sleepWithHeartbeat,
-	sleepWithHeartbeat1
+	sleepWithHeartbeat1,
+	flattenArray,
+	getBingFirstImage
 };

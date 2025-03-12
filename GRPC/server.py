@@ -1,5 +1,5 @@
 #encoding:utf-8
-#python -m grpc_tools.protoc -I../../protos --python_out=. --grpc_python_out=. ../../protos/helloworld.proto
+#每次修改代码后 需要更新GRPC代码：在GRPC目录下运行：python -m grpc_tools.protoc -I../../protos --python_out=. --grpc_python_out=. ../../protos/story.proto
 from concurrent import futures
 from multiprocessing import Process
 import logging
@@ -37,6 +37,11 @@ class Greeter(storyproto_pb2_grpc.GreeterServicer):
         p.join()
         re = "|".join(q.get()['result'])
         return storyproto_pb2.HelloReply(message=re)
+    
+    def GetPic(self, request, context):
+        print(request.name)
+        
+        return storyproto_pb2.HelloReply(message=request.name)
 
 
 def serve():

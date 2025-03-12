@@ -21,14 +21,17 @@ const {
 	mockData,
 	crawler,
 	crawler_child_process,
-	promise1,
 	accessKey,
 	secretKey,
 	bucket,
 	outerURL,
 	getInfoFromGoogleTravel,
 	getPicsFromGoogleTravel,
-	pageMock
+	pageMock,
+	flattenArray,
+	getBingFirstImage,
+	promise1,
+	promise2
 } = require('../config');
 const fileUrl = path.join(__dirname, '../stations.txt')
 
@@ -375,9 +378,14 @@ class TripCtl {
 	}
 	//GRPC below
 	async getStoryDetailByGRPC(ctx){
-		const url = ctx.request.query.url
+		const url = ctx.request.query.url ?? 'https://mp.weixin.qq.com/s?__biz=MzIyMTM3MzE1MA==&mid=2247484651&idx=1&sn=2cbf9de89735555acbd30f456ec68b90&chksm=e83cf35adf4b7a4c25c72bdffc6b4c6bfa751d74a47a51b541b70f67bdc0ca020663fef050c2&token=1642341609&lang=zh_CN#rd'
 		console.log(url)
 		const data = await promise1(client, url)
+		ctx.body = data
+	}
+
+	async getImgGRPC(ctx){
+		const data = await promise2(client, 'wudi')
 		ctx.body = data
 	}
 
@@ -415,6 +423,82 @@ class TripCtl {
 			return num !== '';
 		});
 		ctx.body = res
+	}
+
+	async getBingImg(ctx){
+		const point = ctx.request.query.point
+		console.log(point)
+		const imageUrl = await getBingFirstImage(point);
+		console.log('First image URL:', imageUrl);
+		ctx.body = imageUrl
+	}
+
+	async previewImgs(ctx){
+		const trips = await Trip.find()
+		let pics = []
+		trips.forEach(function(trip){
+			//console.log(trip.tripName ,trip.cover)
+			pics.push({
+				"url":trip.cover, 
+				"tripName": trip.tripName,
+				"nameOfScence": null,
+				"cover": true
+			})
+			let points = flattenArray(trip.detail)
+			
+			points.forEach(function(item){
+				pics.push({
+					"url":item.picURL, 
+					"tripName": trip.tripName,
+					"nameOfScence": item.nameOfScence,
+					"cover": false
+				})
+			})
+		})
+		ctx.body = pics
+	}
+
+	async updatePointImg(ctx){
+		const {url, nameOfScence, tripName, cover} = ctx.request.body
+		let oldItem = await Trip.findOne({tripName: tripName})
+		if (!oldItem) {
+			ctx.body = { success: false, message: 'Trip not found' }
+			return
+		}
+		
+		if(cover){
+			oldItem.cover = url
+		} else {
+			let flag = false
+			let updated = false
+			let detail = JSON.parse(JSON.stringify(oldItem.detail));//二维数组深拷贝
+			//const deepCopiedArray = structuredClone(originalArray);
+			for (let i = 0; i < detail.length; i++){
+				if(flag) break
+				for (let j = 0; j < detail[i].length; j++){
+					if(detail[i][j].nameOfScence === nameOfScence){
+						const oldUrl = detail[i][j].picURL
+						detail[i][j].picURL = url
+						flag = true
+						updated = true
+						break
+					}
+				}
+			}
+			if (!updated) {
+				ctx.body = { success: false, message: 'Scene not found' }
+				return
+			}
+			oldItem.detail = detail
+		}
+		
+		try {
+			let newTrip = await oldItem.save()
+			ctx.body = { success: true, data: newTrip }
+		} catch (error) {
+			console.error('Error saving trip:', error)
+			ctx.body = { success: false, message: 'Error saving changes', error: error.message }
+		}
 	}
 }
 
