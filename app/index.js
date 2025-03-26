@@ -8,7 +8,7 @@ const logger = require('koa-logger')
 const path = require('path')
 const routing = require('./routes')
 const { port } = require('./config')
-const db = 'mongodb://woody:41538bc6dd@localhost/davinci'
+const db = 'mongodb://woody:41538bc6dd@127.0.0.1/davinci'
 const app = new Koa()
 
 const server = require('http').createServer(app.callback())

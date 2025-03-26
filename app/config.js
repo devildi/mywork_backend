@@ -441,11 +441,8 @@ async function getBingFirstImage(keyword = '棋盘山') {
 				visible: true,
 				timeout: 5000
 			});
-			// 5. 点击按钮（触发新窗口
 			await viewButton.click()
 			await new Promise(resolve => setTimeout(resolve, 2000));
-
-			//await new Promise(resolve => setTimeout(resolve, 2000));
         }
 
         await browser.close();

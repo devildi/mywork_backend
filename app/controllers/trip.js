@@ -10,6 +10,7 @@ const puppeteer = require('puppeteer')
 const fs = require('fs')
 const path = require('path')
 const util = require('util')
+const { v4: uuidv4 } = require('uuid');
 
 const client = require('../../GRPC/story_client')
 
@@ -38,7 +39,9 @@ const fileUrl = path.join(__dirname, '../stations.txt')
 class TripCtl {
 	async create(ctx){
 		const trip = ctx.request.body
-		console.log(trip)
+		if(!trip.uid){
+			trip.uid = uuidv4()
+		}
 		const tripData = await Trip.findOne({ uid: trip.uid })
 		if(tripData){
 			tripData.cover = trip.cover
