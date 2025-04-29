@@ -6,6 +6,95 @@ const cp = require('child_process')
 const util = require('util')
 require('events').EventEmitter.defaultMaxListeners = 0
 
+const airportCities = [
+	// 直辖市
+	"北京", "上海", "天津", "重庆",
+	
+	// 河北省
+	"石家庄", "秦皇岛", "唐山", "邯郸", "张家口", "承德", "邢台",
+	
+	// 山西省
+	"太原", "大同", "长治", "运城", "忻州", "临汾", "吕梁", "朔州",
+	
+	// 内蒙古自治区
+	"呼和浩特", "包头", "呼伦贝尔", "赤峰", "鄂尔多斯", "乌兰浩特", "通辽", "乌海", "锡林浩特", "阿拉善左旗","巴彦淖尔", "乌兰察布",
+	
+	// 辽宁省
+	"沈阳", "大连", "丹东", "锦州", "朝阳", "鞍山", "营口",
+	
+	// 吉林省
+	"长春", "延吉", "白山", "通化", "白城", "吉林市", "松原",
+	
+	// 黑龙江省
+	"哈尔滨", "大庆", "齐齐哈尔", "牡丹江", "佳木斯", "黑河", "漠河", "伊春", "鸡西",
+	
+	// 江苏省
+	"南京", "无锡", "徐州", "常州", "南通", "连云港", "盐城", "扬州", "淮安",
+	
+	// 浙江省
+	"杭州", "宁波", "温州", "舟山", "台州", "衢州", "丽水", "义乌",
+	
+	// 安徽省
+	"合肥", "黄山", "阜阳", "安庆", "池州", "芜湖", "蚌埠", "亳州",
+	
+	// 福建省
+	"福州", "厦门", "泉州", "武夷山", "连城", "三明",
+	
+	// 江西省
+	"南昌", "赣州", "景德镇", "井冈山", "九江", "宜春", "上饶",
+	
+	// 山东省
+	"济南", "青岛", "烟台", "威海", "临沂", "济宁", "日照", "潍坊", "东营", "菏泽", "枣庄",
+	
+	// 河南省
+	"郑州", "洛阳", "南阳", "信阳", "安阳", "新郑", "周口", "商丘", "驻马店",
+	
+	// 湖北省
+	"武汉", "宜昌", "襄阳", "恩施", "十堰", "神农架",
+	
+	// 湖南省
+	"长沙", "张家界", "常德", "衡阳", "怀化", "永州", "邵阳", "岳阳",
+	
+	// 广东省
+	"广州", "深圳", "珠海", "揭阳", "湛江", "梅州", "韶关", "惠州", "佛山",
+	
+	// 广西壮族自治区
+	"南宁", "桂林", "北海", "柳州", "百色", "河池", "梧州", "玉林", 
+	
+	// 海南省
+	"海口", "三亚", "琼海", "三沙",
+	
+	// 四川省
+	"成都", "绵阳", "泸州", "宜宾", "达州", "西昌", "广元", "攀枝花", "九寨沟", "康定", "巴中",
+	
+	// 贵州省
+	"贵阳", "遵义", "铜仁", "兴义", "安顺", "六盘水", "毕节",
+	
+	// 云南省
+	"昆明", "丽江", "大理", "西双版纳", "保山", "临沧", "普洱", "昭通", "文山", "德宏",
+	
+	// 西藏自治区
+	"拉萨", "林芝", "昌都", "日喀则", "阿里",
+	
+	// 陕西省
+	"西安", "榆林", "延安", "汉中", "安康", "宝鸡",
+	
+	// 甘肃省
+	"兰州", "敦煌", "嘉峪关", "庆阳", "张掖", "天水", "甘南",
+	
+	// 青海省
+	"西宁", "格尔木", "玉树", "果洛",
+	
+	// 宁夏回族自治区
+	"银川", "中卫", "固原",
+	
+	// 新疆维吾尔自治区
+	"乌鲁木齐", "喀什", "伊宁", "阿勒泰", "库尔勒", "阿克苏", "和田", "克拉玛依", "塔城", "哈密", "石河子",
+	
+	// 港澳台
+	//"香港", "澳门", "台北", "高雄", "台中", "花莲", "金门"
+];
+
 function farmet(data){
 	for (let key in data){
 		if (data[key] instanceof Array ){
@@ -21,7 +110,7 @@ async function Excel(data, to = '全国'){
 	//console.log(farmetData)
 	try{
 		await workbook.xlsx.readFile(path.join(__dirname, `../results/${to}.xlsx`))
-		const sheet = workbook.getWorksheet('测试报表')
+		const sheet = workbook.getWorksheet('火车车次信息')
 		sheet.columns = [
 			{header: '车站', key: 'destination', width: 15},
 			{header: '城市', key: 'city', width: 15},
@@ -34,7 +123,7 @@ async function Excel(data, to = '全国'){
 		await workbook.xlsx.writeFile(path.join(__dirname, `../results/${to}.xlsx`))
 		console.log(`将${farmetData.destination}站的信息写入Excel文件`)
 	}catch(err){
-		let sheet = workbook.addWorksheet('测试报表')
+		let sheet = workbook.addWorksheet('火车车次信息')
 		sheet.columns = [
 			{header: '车站', key: 'destination', width: 15},
 			{header: '城市', key: 'city', width: 15},
@@ -66,7 +155,8 @@ function trainFilter(destination, array, city, province){
 		if(obj.No.startsWith('G') || obj.No.startsWith('D')){
 			hasGOrD.push(obj.No)
 		}
-		if(timeDefine(obj.depart) < 1 * 60 || timeDefine(obj.depart) > 17 * 60 && timeDefine(obj.arrive) < 12 * 60 && timeDefine(obj.arrive) > 4 * 60 && timeDefine(obj.duration)< 13 * 60){
+		//出发时间：凌晨1点以前，下午5点以后；到达时间：早上4点以后，中午12点以前；时长：16小时以内
+		if(timeDefine(obj.depart) < 1 * 60 || timeDefine(obj.depart) > 17 * 60 && timeDefine(obj.arrive) < 14 * 60 && timeDefine(obj.arrive) > 4 * 60 && timeDefine(obj.duration)< 19 * 60){
 			overNight.push(obj.No)	
 		}
 		if(timeDefine(obj.arrive) < 12 * 60 && timeDefine(obj.depart) > 7 * 60 && timeDefine(obj.duration)<= 2 * 60){
@@ -534,7 +624,8 @@ module.exports = {
 		{"stationsName":"长春","stationsNameCHN":"changchun", "inWhichCity":"长沙","inWhichProvince":"湖南省"},
 		{"stationsName":"上海","stationsNameCHN":"shanghai", "inWhichCity":"长沙","inWhichProvince":"湖南省"},
 		{"stationsName":"横道河子","stationsNameCHN":"hengdaohezi","inWhichCity":"牡丹江","inWhichProvince":"黑龙江省"},
-		{"stationsName":"铁岭","stationsNameCHN":"tieling","inWhichCity":"铁岭","inWhichProvince":"辽宁省"}
+		{"stationsName":"铁岭","stationsNameCHN":"tieling","inWhichCity":"铁岭","inWhichProvince":"辽宁省"},
+		{"stationsName":"南京","stationsNameCHN":"nanjing","inWhichCity":"南京","inWhichProvince":"江苏省"},
 	],
 	crawler,
 	crawler_child_process,
@@ -552,5 +643,6 @@ module.exports = {
 	sleepWithHeartbeat,
 	sleepWithHeartbeat1,
 	flattenArray,
-	getBingFirstImage
+	getBingFirstImage,
+	airportCities
 };

@@ -11,7 +11,8 @@ const tripSchema = new Schema({
 	country: { type: String, required: true},
 	tags: { type: String},
 	cover: { type: String},
-	detail: []
+	detail: [],
+	createAt: { type: Date, default: Date.now() },
 })
 
 module.exports = model('Trip', tripSchema);

@@ -16,13 +16,20 @@ const {
 	sleepWithHeartbeat
 } = require('../app/config')
 const fileUrl = path.join(__dirname, '../results/finalStationInfo.txt')
-
+const trainFlagPath = path.join(__dirname, '../results/trainFlag.txt')
 const timestamp1 = Date.now()
 let browser = null
 let page = null
 let sleepTimes = 0
-let from = 'shenyang'
+let from = {
+	"stationsName":"沈阳",
+	"stationsNameCHN":"shenyang",
+	"inWhichCity":"沈阳",
+	"inWhichProvince":"辽宁省"
+}
 let to = '吉林省'
+const flagData = fs.readFileSync(trainFlagPath, 'utf8')
+let number = Number(flagData.trim())
 const data = fs.readFileSync(fileUrl)
 console.log('读车站信息文件成功！')
 let stationsArray = JSON.parse(data.toString('utf-8'))
@@ -31,13 +38,14 @@ puppeteer.use(StealthPlugin())
 puppeteer.use(AnonymizeUA({
 	makeWindows: true
 }))
-crawler(dataForSpider, from, dataForSpider.length)
+crawler(mockData, from, mockData.length, number == 10086 ? 0 : number + 1)
 
 async function crawler (array, from, flag, index = 0){
-    let arrFrom = [...from]
+    let arrFrom = [...from.stationsNameCHN]
 	let item = array[index]
 	if(!browser){
 		browser = await puppeteer.launch({
+			//headless: false,
 			args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-blink-features=AutomationControlled'],
 			dumpio: false,
 		})
@@ -71,13 +79,43 @@ async function crawler (array, from, flag, index = 0){
 			for (let i = 0; i < arrFrom.length; i++){
 				await page.keyboard.press(arrFrom[i]);
 			}
-			await page.keyboard.press('Enter')
+			await page.waitForSelector('#panel_cities');
+			const elements = await page.$$('#panel_cities > *');
+			for (const element of elements) {
+				const span = await element.$('span:first-child');
+				if (!span) continue;
+				const spanText = await span.evaluate(el => el.textContent.trim());
+				if (spanText === from.stationsName) {
+					await element.evaluate(el => {
+						el.click();
+						el.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+					});
+					break;
+				}
+			}
+			await sleep(1000)
+			//await page.keyboard.press('Enter')
 
 			await page.tap('#toStationText')
 			for (let i = 0; i < arrTo.length; i++){
 				await page.keyboard.press(arrTo[i]);
 			}
-			await page.keyboard.press('Enter')
+			await page.waitForSelector('#panel_cities');
+			const elements1 = await page.$$('#panel_cities > *');
+			for (const element1 of elements1) {
+				const span1 = await element1.$('span:first-child');
+				if (!span1) continue;
+				const spanText1 = await span1.evaluate(el => el.textContent.trim());
+				if (spanText1 === item.stationsName) {
+					await element1.evaluate(el => {
+						el.click();
+						el.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+					});
+					break;
+				}
+			}
+			await sleep(1000)
+			//await page.keyboard.press('Enter')
 
 			await page.click('#date_range>ul>li:nth-child(2)')
 
@@ -110,7 +148,7 @@ async function crawler (array, from, flag, index = 0){
 					return result
 				}
 			)
-			console.log(`${from}-->${item.stationsName}共${result.length}个车次`)
+			console.log(`${from.stationsName}-->${item.stationsName}共【${result.length}】个车次`)
 			if(result.length > 0){
 				let resultInfo = trainFilter(item.stationsName, result, item.inWhichCity, item.inWhichProvince)
 				if(resultInfo){
@@ -119,10 +157,12 @@ async function crawler (array, from, flag, index = 0){
 			}
 			await page.close()
 			page = null
-			console.log(`${item.stationsName}站已经爬完！${index + 1}/${flag}，已经用时${formatTimeDiff(Date.now() - timestamp1)}，物理内存占用：${(process.memoryUsage().rss/1024/1024).toFixed(1)}MB；JS堆内存已分配：${(process.memoryUsage().heapTotal/1024/1024).toFixed(1)}MB，已使用：${(process.memoryUsage().heapUsed/1024/1024).toFixed(1)}MB；`)
+			console.log(`${item.stationsName}站已经爬完！${index + 1}/${flag}，已经用时${formatTimeDiff(Date.now() - timestamp1)}，物理内存占用：${(process.memoryUsage().rss/1024/1024).toFixed(1)}MB；JS堆内存已分配：${(process.memoryUsage().heapTotal/1024/1024).toFixed(1)}MB，已使用：${(process.memoryUsage().heapUsed/1024/1024).toFixed(1)}MB；==========`)
+			fs.writeFileSync(trainFlagPath, index.toString());
 			index++
 			if(index === flag){
 				console.log(`爬虫结束！总用时${formatTimeDiff(Date.now() - timestamp1)}，休眠${sleepTimes}次！`)
+				fs.writeFileSync(trainFlagPath, '10086');
 				await browser.close()
 				browser = null
 				return

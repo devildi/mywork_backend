@@ -106,10 +106,11 @@ class TripCtl {
 	}
 
 	async getAllTrip(ctx){
+		
 		const perPage = 20
 		const uid = ctx.request.query.uid
 		const page = ctx.request.query.page || 1
-		const trips = await Trip.find().limit(page * perPage)
+		const trips = await Trip.find().limit(page * perPage).sort({'createAt':-1})
 		if(uid){
 			let newArray = trips.filter(function(i){
 				return i.uid == uid
