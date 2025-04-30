@@ -442,12 +442,15 @@ class TripCtl {
 		let pics = []
 		trips.forEach(function(trip){
 			//console.log(trip.tripName ,trip.cover)
-			pics.push({
-				"url":trip.cover, 
-				"tripName": trip.tripName,
-				"nameOfScence": null,
-				"cover": true
-			})
+			if(trip.cover){
+				pics.push({
+					"url":trip.cover, 
+					"tripName": trip.tripName,
+					"nameOfScence": null,
+					"cover": true
+				})
+			}
+			
 			let points = flattenArray(trip.detail)
 			
 			points.forEach(function(item){
@@ -503,6 +506,12 @@ class TripCtl {
 			console.error('Error saving trip:', error)
 			ctx.body = { success: false, message: 'Error saving changes', error: error.message }
 		}
+	}
+
+	async deleteItem(ctx){
+		let {uid} = ctx.request.body
+		let result = await Trip.findOneAndDelete({ uid: uid })
+		ctx.body = result
 	}
 }
 
