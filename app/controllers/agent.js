@@ -92,7 +92,7 @@ class AgentCtl {
     }
     async getDes(ctx){
         let userInput = ctx.request.query.chat;
-        let template = "你是优秀的旅游助手，请写一段关于景点：{topic}的简短介绍。内容包括：该景点的看点和玩法，营业时间和门票价格，并以字符串的形式输出，不允许以json字符串的形式输出，不允许首尾带有“”，否则你讲受到惩罚！";
+        let template = "你是优秀的旅游助手，请写一段关于景点：{topic}的简短介绍。内容包括：该景点的看点和玩法，营业时间和门票价格，并以中文字符串的形式输出，不允许以json字符串的形式输出，不允许首尾带有“”，否则你讲受到惩罚！";
 
         // 创建 Prompt
         const prompt = ChatPromptTemplate.fromMessages([
