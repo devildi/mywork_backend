@@ -491,6 +491,10 @@ async function getBingFirstImage(keyword = '棋盘山') {
         //     }
         // });
 
+		// await page._client.send('Page.setDownloadBehavior', {
+        //     behavior: 'deny'
+        // });
+
         await page.goto('https://cn.bing.com/images', { 
             waitUntil: 'networkidle2',
             timeout: 30000
@@ -533,6 +537,12 @@ async function getBingFirstImage(keyword = '棋盘山') {
 			});
 			await viewButton.click()
 			await new Promise(resolve => setTimeout(resolve, 2000));
+			if (!targetImageUrl) {
+				targetImageUrl = await frame.evaluate(() => {
+					const img = document.querySelector('.imgContainer img');
+					return img ? img.src : null;
+				});
+			}
         }
 
         await browser.close();
