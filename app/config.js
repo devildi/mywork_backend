@@ -4,6 +4,7 @@ const xls = require("exceljs")
 const path = require('path')
 const cp = require('child_process')
 const util = require('util')
+const os = require('os');
 require('events').EventEmitter.defaultMaxListeners = 0
 
 const airportCities = [
@@ -443,7 +444,39 @@ async function sleepWithHeartbeat1(duration, interval, heartbeat, page) {
 		await heartbeat(page); // 调用心跳操作
 	  }
 	}
-  }
+}
+
+function getWirelessIP() {
+  	const interfaces = os.networkInterfaces();
+    let wifiIp = null;
+	console.log(interfaces)
+    // 常见的无线网卡名称在不同操作系统下可能不同
+    const wifiInterfaceNames = [
+        'lo0',       
+        'en2',       
+        'awdl0',         
+        'llw0',        
+        'utun0',
+		'utun1',
+		'utun2',
+        '无线网络连接'  
+    ];
+
+    for (const name of wifiInterfaceNames) {
+        if (interfaces[name]) {
+            for (const iface of interfaces[name]) {
+                // 跳过内部（ipv6）和非IPv4地址
+                if (iface.family === 'IPv4' && !iface.internal) {
+                    wifiIp = iface.address;
+                    break;
+                }
+            }
+            if (wifiIp) break;
+        }
+    }
+
+    return wifiIp || '无法确定无线IP地址';
+}
 
 /**
  * 从必应图片搜索获取第一张图片链接
@@ -654,5 +687,6 @@ module.exports = {
 	sleepWithHeartbeat1,
 	flattenArray,
 	getBingFirstImage,
-	airportCities
+	airportCities,
+	getWirelessIP
 };

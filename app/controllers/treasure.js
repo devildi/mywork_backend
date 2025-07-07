@@ -1,6 +1,6 @@
 const TreasureUser = require('../models/treasureUsers');
 const Treasure = require('../models/treasure');
-const { authority, outerURL } = require('../config')
+const { authority, outerURL, getWirelessIP } = require('../config')
 const { v4: uuidv4 } = require('uuid');
 
 class TreasureCtl {
@@ -65,7 +65,7 @@ class TreasureCtl {
         const trips = await Treasure.find().sort({'createAt':-1})
         let totalPrice = 0;
         trips.forEach((item) => {
-            totalPrice += item.price
+            totalPrice += (item.sellPrice > 0 ? item.sellPrice : item.price)
         })
         console.log("getTotalPriceAndCount", totalPrice, trips.length)
         ctx.body = {totalPrice: parseFloat(totalPrice), count: trips.length};
@@ -82,6 +82,20 @@ class TreasureCtl {
         }).sort({'createAt':-1}).populate({path: 'owner'})
         console.log("search",toys.length)
         ctx.body = toys;
+    }
+
+    async getIP(ctx){
+        const result = getWirelessIP();
+        console.log(`无线网卡的 IP 是: ${result}`);
+        ctx.body = result
+    }
+
+    async modify(ctx){
+        const item = ctx.request.body
+        const {id} = item
+        const result = await Treasure.updateOne({_id: id}, item)
+        console.log(result)
+        ctx.body = result
     }
 }
 

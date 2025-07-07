@@ -6,7 +6,9 @@ const {
 	createItem,
 	getAllTreasures,
 	getTotalPriceAndCount,
-	search
+	search,
+	getIP,
+	modify
 } = require('../controllers/treasure');
 
 router.post('/register', create)
@@ -15,5 +17,7 @@ router.post('/newItem', createItem)
 router.get('/getAllTreasures', getAllTreasures)
 router.get('/getTotalPriceAndCount', getTotalPriceAndCount)
 router.get('/search', search)
+router.get('/getIP', getIP)
+router.post('/modify', modify)
 
 module.exports = router;
