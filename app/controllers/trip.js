@@ -396,7 +396,6 @@ class TripCtl {
 	async getUploadToken(ctx){
 		let mac = new qiniu.auth.digest.Mac(accessKey, secretKey)
 		let type = ctx.request.query.type
-		console.log(type)
 		let options = null
 		if(type !== '3'){
 			options = {

@@ -7,6 +7,7 @@ const treasureSchema = new Schema({
     id: { type: String, required: true, unique: true },
     toyName: { type: String, required: true },
     toyPicUrl: { type: String, required: true },
+    localUrl: { type: String, required: true },
     picWidth: { type: Number, required: true },
     picHeight: { type: Number, required: true },
     description: { type: String},
