@@ -239,46 +239,31 @@ class AgentCtl {
     async getDes(ctx){
         let userInput = ctx.request.query.chat;
         let template = "你是优秀的旅游助手，请写一段关于景点：{topic}的简短介绍。内容包括：该景点的看点和玩法，营业时间和门票价格，并输出单行字符串，不允许有换行符，以中文字符串的形式输出，不允许以json字符串的形式输出，不允许首尾带有“”，否则你讲受到惩罚！";
-
-        // 创建 Prompt
         const prompt = ChatPromptTemplate.fromMessages([
             ["system", template]
         ]);
-
-        // 创建 LLMChain
         let chain = new LLMChain({
-            llm: chatModel, // 使用正确的变量 chatModel
+            llm: chatModel,
             prompt: prompt
         });
-
-        // 执行链
         let response = await chain.run({ topic: userInput });
         console.log(response)
-        ctx.body = response;
+        ctx.body = JSON.stringify(response)
     }
     async getInfos(ctx){
         let userInput = ctx.request.query.chat;
         let template = "我是一个专业的旅行行程助手，我本次的旅程会经过如下地点：{topic}，请问：这些目的地都在哪个城市，哪个国家，最后为本次旅程打几个标签。返回的格式为json字符串，key包含city、country和tags，且返回的字符串为单行形式，内容以英文的'/'分割，内容必须是中文，不要输出多行的给我，否则你会受到惩罚！";
-
-        // 创建 Prompt
         const prompt = ChatPromptTemplate.fromMessages([
             ["system", template]
         ]);
-
-        // 创建 LLMChain
         let chain = new LLMChain({
-            llm: chatModel, // 使用正确的变量 chatModel
+            llm: chatModel,
             prompt: prompt
         });
-
-        // 执行链
         let response = await chain.run({ topic: userInput });
         let obj = JSON.parse(response)
         console.log(obj)
-
-        //obj.tags = obj.tags.join('/')
         let str = JSON.stringify(obj)
-        
         ctx.body = str;
     }
     async formatTripFromLLM(ctx){
