@@ -8,7 +8,8 @@ const {
 	getTotalPriceAndCount,
 	search,
 	getIP,
-	modify
+	modify,
+	deleteItem
 } = require('../controllers/treasure');
 
 router.post('/register', create)
@@ -19,5 +20,6 @@ router.get('/getTotalPriceAndCount', getTotalPriceAndCount)
 router.get('/search', search)
 router.get('/getIP', getIP)
 router.post('/modify', modify)
+router.post('/delete', deleteItem)
 
 module.exports = router;

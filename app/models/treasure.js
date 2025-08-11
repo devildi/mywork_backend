@@ -19,4 +19,9 @@ const treasureSchema = new Schema({
     sellAt: { type: Date},
     isSelled: { type: Boolean, required: true, default: false},
 })
+treasureSchema.pre('save', function (next) {
+    const treasure = this; // 当前正在保存的文档
+    treasure.createAt = new Date();
+    next();
+});
 module.exports = model('Treasure', treasureSchema);

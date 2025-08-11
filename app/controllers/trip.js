@@ -32,7 +32,13 @@ const {
 	flattenArray,
 	getBingFirstImage,
 	promise1,
-	promise2
+	promise2,
+	gaodeWebKey,
+	getLocation,
+	isImageUrlValid,
+	isImageUrlValid2,
+	defaultPicUrl,
+	getFirstBaiduImage
 } = require('../config');
 const fileUrl = path.join(__dirname, '../stations.txt')
 
@@ -51,6 +57,19 @@ class TripCtl {
 		} else {
 			let trip2 = await new Trip(trip).save()
 			ctx.body = trip2
+		}
+	}
+
+	async deleteTrip(ctx){
+		const {uid} = ctx.request.body
+		console.log('准备删除Trip，uid:', uid);
+		try {
+			const result = await Trip.deleteOne({ uid: uid });
+			console.log('删除结果:', result);
+			ctx.body = result
+		} catch (err) {
+			console.error('删除失败:', err);
+			ctx.body = err
 		}
 	}
 
@@ -430,10 +449,18 @@ class TripCtl {
 
 	async getBingImg(ctx){
 		const point = ctx.request.query.point
-		console.log(point)
+		console.log(`准备获取${point}的图片链接`);
 		const imageUrl = await getBingFirstImage(point);
-		console.log('First image URL:', imageUrl);
+		console.log(`已获取${point}的图片链接：${imageUrl}`);
 		ctx.body = imageUrl
+	}
+
+	async location(ctx){
+		const point = ctx.request.query.point
+		console.log(`准备获取${point}的经纬度信息`);
+		let location = await getLocation(gaodeWebKey, point)
+		console.log(`已获取${point}的经纬度信息：${location}`);
+		ctx.body = location
 	}
 
 	async previewImgs(ctx){
@@ -511,6 +538,74 @@ class TripCtl {
 		let {uid} = ctx.request.body
 		let result = await Trip.findOneAndDelete({ uid: uid })
 		ctx.body = result
+	}
+
+	async chechUrl(ctx){
+		const uid = ctx.request.query.uid || '16' //默认测试用的uid
+		const trips = await Trip.find({ uid: uid })
+		let array = []
+		for (let i = 0; i < trips.length; i++) {
+			let trip = trips[i]
+			let detail = trip.detail
+			let name = trip.tripName
+			console.log(`==================准备检查${name}下的景点图片链接：==================`)
+			for (let j = 0; j < detail.length; j++) {
+				let day = detail[j]
+				for (let k = 0; k < day.length; k++) {
+					let point = day[k]
+					if(point.picURL === defaultPicUrl) {
+						console.log(`${name}的【${point.nameOfScence}】的图片为【默认链接】！即将重置图片链接！！`);
+						const imageUrl = await getBingFirstImage(point.nameOfScence);
+						point.picURL = imageUrl
+						trip.markModified('detail');
+						await trip.save()
+						array.push({
+							whichTrip: i,
+							whichDay: j,
+							whichPoint: k,
+							nameOfScence: point.nameOfScence,
+							picURL:imageUrl,
+						})
+					} else {
+						let {isValid, width, height }= await isImageUrlValid2(point.picURL)
+						console.log(point.nameOfScence, isValid, width, height)
+						if(!isValid || (width < 100 && height < 100 && width == height)){
+							console.log(`${name}的【${point.nameOfScence}】的图片链接【有问题】！即将重置图片链接！！`);
+							const imageUrl = await getBingFirstImage(point.nameOfScence);
+							if(imageUrl !== defaultPicUrl && imageUrl !== null && imageUrl !== undefined){
+								console.log(`已获取【${point.nameOfScence}】的新图片链接：${imageUrl}`);
+								point.picURL = imageUrl
+								trip.markModified('detail');
+								await trip.save()
+								array.push({
+									whichTrip: i,
+									whichDay: j,
+									whichPoint: k,
+									nameOfScence: point.nameOfScence,
+									picURL:imageUrl,
+								})
+							}
+						}
+					}
+				}
+			}
+		}
+		for (let i = 0; i < array.length; i++) {
+			console.log(`再次检验的【${array[i].nameOfScence}】的图片链接有效性！！`);
+			let {isValid, width, height }= await isImageUrlValid2(array[i].picURL)
+			if(!isValid || (width < 100 && height < 100 && width == height)){
+				console.log(`${array[i].nameOfScencename}的图片链接【有问题】！即将重置图片链接！！`);
+				const imageUrl = await getFirstBaiduImage(point.nameOfScence);
+				if(imageUrl !== defaultPicUrl && imageUrl !== null && imageUrl !== undefined){
+					trips[array[i].whichTrip][array[i].whichDay][array[i].whichPoint].picURL = imageUrl
+					trip.markModified('detail');
+					await trip.save()
+				}
+			} else{
+				console.log(`【${array[i].nameOfScence}】的图片链接有效！！`);
+			}
+		}
+		ctx.body = array
 	}
 }
 

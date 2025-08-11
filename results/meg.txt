@@ -1,0 +1,4 @@
+magnet:?xt=urn:btih:343b47c5bdf1b5e7f0b703536ebdb1f174afda31&dn=[javdb.com]259LUXU-1849
+magnet:?xt=urn:btih:ced957264b6b4dcd9b5c61440247f4e530f1fe64&dn=[javdb.com]IPZZ-643
+magnet:?xt=urn:btih:8d7e291d89ebeeddb2fd96b5ce448ce9ae8f2e3b&dn=[javdb.com]JUR-437
+magnet:?xt=urn:btih:9be5759364aedc4c2058f9a571f3630e7287e64b&dn=[javdb.com]JUR-374-C.torrent

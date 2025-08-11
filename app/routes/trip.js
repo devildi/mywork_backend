@@ -37,7 +37,10 @@ const {
 	updatePointImg,
 	getBingImg,
 	getImgGRPC,
-	deleteItem
+	deleteItem,
+	deleteTrip,
+	location,
+	chechUrl
 } = require('../controllers/trip');
 
 router.get('/getUploadToken', getUploadToken);
@@ -74,4 +77,7 @@ router.get('/getBingImg', getBingImg)
 router.get('/getStoryDetailByGRPC', getStoryDetailByGRPC)
 router.get('/getImgGRPC', getImgGRPC)
 router.post('/deleteItem', deleteItem)
+router.post('/deleteTrip', deleteTrip)
+router.get('/getLocation', location)
+router.get('/checkUrl', chechUrl)
 module.exports = router;

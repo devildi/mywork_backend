@@ -5,6 +5,8 @@ const path = require('path')
 const cp = require('child_process')
 const util = require('util')
 const os = require('os');
+const qiniu = require('qiniu');
+const axios = require('axios')
 require('events').EventEmitter.defaultMaxListeners = 0
 
 const airportCities = [
@@ -502,10 +504,10 @@ async function getBingFirstImage(keyword = '棋盘山') {
         browser.on('targetcreated', async (target) => {
             if (target.type() === 'page') {
                 const newPage = await target.page();
-                console.log('新页面已打开');
+                //console.log('新页面已打开');
                 // 获取新页面的标题
                 targetImageUrl = await newPage.url();
-                console.log('新页面的标题:', targetImageUrl);
+                //console.log('新页面的标题:', targetImageUrl);
                 // 关闭新页面（可选）
                 await newPage.close();
             }
@@ -527,16 +529,13 @@ async function getBingFirstImage(keyword = '棋盘山') {
 		// await page._client.send('Page.setDownloadBehavior', {
         //     behavior: 'deny'
         // });
-
         await page.goto('https://cn.bing.com/images', { 
             waitUntil: 'networkidle2',
             timeout: 30000
         });
-
         // 找到搜索框并输入关键词
         await page.type('input[name="q"]', keyword);
         await page.keyboard.press('Enter');
-
 		// 等待一下确保结果完全加载
         await new Promise(resolve => setTimeout(resolve, 2000));
         
@@ -551,18 +550,14 @@ async function getBingFirstImage(keyword = '棋盘山') {
         if (firstImage) {
             await firstImage.click();
             await new Promise(resolve => setTimeout(resolve, 3000));
-
 			await page.waitForFunction(() => {
 				const iframe = document.querySelector('.insightsOverlay');
 				return iframe && getComputedStyle(iframe).display !== 'none';
 			}, { timeout: 5000 });
-	
 			// 2. 获取 iframe 元素句柄
 			const iframeHandle = await page.$('iframe.insightsOverlay');
-			
 			// 3. 转换为 Frame 上下文
 			const frame = await iframeHandle.contentFrame();
-			
 			// 4. 在 iframe 内操作
 			const viewButton = await frame.waitForSelector('#actionbar > ul > li.imgsrcc > div', {
 				visible: true,
@@ -577,20 +572,162 @@ async function getBingFirstImage(keyword = '棋盘山') {
 				});
 			}
         }
-
         await browser.close();
+		console.log('get url: ', targetImageUrl)
         return targetImageUrl;
-
     } catch (error) {
         console.error('Error in getBingFirstImage:', error.message);
         if (browser) {
             await browser.close();
         }
-        return null;
+        return 'https://s21.ax1x.com/2025/08/04/pVUP4XQ.jpg';
     }
 }
 
+async function getFirstBaiduImage(searchTerm) {
+  const browser = await puppeteer.launch({
+    headless: 'new', // 设置为 false 可以看到浏览器操作
+    defaultViewport: null,
+    args: ['--start-maximized'] // 最大化窗口
+  });
+
+  try {
+    const page = await browser.newPage();
+    
+    // 打开百度图片首页
+    await page.goto('https://image.baidu.com/', {
+      waitUntil: 'networkidle2',
+      timeout: 30000
+    });
+
+    console.log('已打开百度图片首页');
+
+    // 输入搜索词并提交
+    await page.type('#image-search-input', searchTerm);
+    await page.click('.submit-btn_38GYq');
+    console.log(`已搜索: ${searchTerm}`);
+
+    // 等待瀑布流容器加载
+    await page.waitForSelector('#waterfall', { timeout: 15000 });
+    
+    // 等待li元素加载（添加重试逻辑）
+    let retries = 3;
+    let liElements = null;
+    
+    while (retries > 0 && (!liElements || liElements.length < 2)) {
+      try {
+        await page.waitForSelector('#waterfall ul > li:nth-child(2)', { timeout: 5000 });
+        liElements = await page.$$('#waterfall ul > li');
+      } catch (e) {
+        retries--;
+        console.log(`等待li元素失败，剩余重试次数: ${retries}`);
+        await page.waitFor(1000); // 等待1秒后重试
+      }
+    }
+
+    if (!liElements || liElements.length < 2) {
+      throw new Error('无法找到足够数量的图片元素');
+    }
+
+    // 点击第二个li元素（索引为1）
+    await liElements[1].click();
+    console.log('已点击第二张图片');
+
+    // 等待新页面打开
+    const newPagePromise = new Promise(resolve => 
+      browser.once('targetcreated', target => resolve(target.page()))
+    );
+    const newPage = await newPagePromise;
+    await newPage.waitForNavigation({ waitUntil: 'networkidle2' });
+
+    console.log('新页面已打开');
+
+    // 获取高清图片URL（添加多种选择器尝试）
+    const imageUrl = await newPage.evaluate(() => {
+      const selectors = [
+        '.image_1Vzas',
+        '.image-contain-y_1fkDN',
+        'img[src*="http"]' // 更通用的选择器
+      ];
+      
+      for (const selector of selectors) {
+        const img = document.querySelector(selector);
+        if (img && img.src) return img.src;
+      }
+      return null;
+    });
+
+    if (imageUrl) {
+      console.log('获取到的图片URL:', imageUrl);
+      return imageUrl;
+    } else {
+      throw new Error('无法获取图片URL');
+    }
+  } catch (error) {
+    console.error('爬取过程中出错:', error);
+    return null;
+  } finally {
+    await browser.close();
+  }
+}
+async function isImageUrlValid(url) {
+  try {
+    const response = await axios.get(url, {
+      responseType: 'stream',
+      timeout: 5000,
+      headers: {
+        'User-Agent': 'Mozilla/5.0', // 某些服务器要求
+        'Referer': url // 有些CDN检查Referer
+      }
+    });
+
+    const contentType = response.headers['content-type'] || '';
+    const isImage = contentType.startsWith('image/');
+    
+    // 关闭 stream（不读取内容）
+    response.data.destroy();
+
+    return response.status === 200 && isImage;
+  } catch (error) {
+    return false;
+  }
+}
+async function isImageUrlValid2(url) {
+  const browser = await puppeteer.launch({ headless: 'new' });
+  const page = await browser.newPage();
+
+  try {
+    const result = await page.evaluate((url) => {
+      return new Promise((resolve) => {
+        const img = new Image();
+        img.src = url;
+        img.onload = () => resolve({
+          isValid: true,
+          width: img.naturalWidth,
+          height: img.naturalHeight
+        });
+        img.onerror = () => resolve({
+          isValid: false,
+          width: 0,
+          height: 0
+        });
+      });
+    }, url);
+
+    await browser.close();
+    return result;
+  } catch (err) {
+    await browser.close();
+    return {
+      isValid: false,
+      width: 0,
+      height: 0
+    };
+  }
+}
 module.exports = {
+	defaultPicUrl: 'https://s21.ax1x.com/2025/08/04/pVUP4XQ.jpg',
+	gaodeWebKey: '9901e426fa0ed15aba1f3f4435d999de',
 	tencentMapKey: 'GRCBZ-ZELKJ-H2FFV-FBSQT-OJM6T-ZSFK4',
 	accessKey :'o9zaFko-BJ4y7txnOpEiFJfPTalWI2LQLS3exIr1',
 	secretKey :'67dcr5piITYljpd8rkyEbDz0wugIRqOARK8Frvkk',
@@ -599,8 +736,39 @@ module.exports = {
 	appid: 'wx9dd29c9565a24027',
 	wesecret: 'd8431676186d8248c2a7e01d32d31c25',
 	port: 4000,
+	logo: 'https://res.cloudinary.com/dnfhsjz8u/image/upload/v1620372687/u_4168080911_4188088242_fm_15_gp_0_qfgrpg.jpg',
 	secret: 'DavinciUser',
 	authority: 'wudi41538bc6dd',
+	getLocation: function(apiKey, str){
+		return new Promise((resolve, reject) => {
+			const url = `https://restapi.amap.com/v3/geocode/geo?address=${str}&key=${apiKey}&output=JSON`;
+			fetch(url)
+				.then(response => response.json())
+				.then(data => {
+					if (data.geocodes && data.geocodes.length > 0) {
+						resolve(data.geocodes[0].location);
+					} else {
+						reject(new Error('No location found'));
+					}
+				})
+				.catch(err => reject(err));
+		});
+	},
+	deleteQiniu: function (accessKey, secretKey, bucket, key){
+		const mac = new qiniu.auth.digest.Mac(accessKey, secretKey);
+		const config = new qiniu.conf.Config();
+		config.zone = qiniu.zone.Zone_z0;
+		const bucketManager = new qiniu.rs.BucketManager(mac, config);
+		return new Promise((resolve, reject) => {
+			bucketManager.delete(bucket, key, function(err, respBody, respInfo) {
+				if (err) {
+					reject(err);
+				} else {
+					resolve(respBody);
+				}
+			});
+		});
+	},
 	f1: function(str1, str2){
 		let index = str1.split('|').indexOf(str2)
 		if(index > -1){
@@ -688,5 +856,8 @@ module.exports = {
 	flattenArray,
 	getBingFirstImage,
 	airportCities,
-	getWirelessIP
+	getWirelessIP,
+	isImageUrlValid,
+	isImageUrlValid2,
+	getFirstBaiduImage
 };
