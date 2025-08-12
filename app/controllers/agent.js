@@ -248,7 +248,7 @@ class AgentCtl {
         });
         let response = await chain.run({ topic: userInput });
         console.log(response)
-        ctx.body = JSON.stringify(response)
+        ctx.body = response
     }
     async getInfos(ctx){
         let userInput = ctx.request.query.chat;
