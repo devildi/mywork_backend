@@ -38,9 +38,11 @@ const {
 	isImageUrlValid,
 	isImageUrlValid2,
 	defaultPicUrl,
-	getFirstBaiduImage
+	getFirstBaiduImage,
+	deleteQiniu
 } = require('../config');
 const fileUrl = path.join(__dirname, '../stations.txt')
+const taskQueue = require('../tools/taskQueue')
 
 class TripCtl {
 	async create(ctx){
@@ -541,7 +543,7 @@ class TripCtl {
 	}
 
 	async chechUrl(ctx){
-		const uid = ctx.request.query.uid || '16' //默认测试用的uid
+		const uid = ctx.request.query.uid || '1' //默认测试用的uid
 		const trips = await Trip.find({ uid: uid })
 		let array = []
 		for (let i = 0; i < trips.length; i++) {
@@ -606,6 +608,109 @@ class TripCtl {
 			}
 		}
 		ctx.body = array
+	}
+
+	async checkUrlQueue(ctx) {
+		const uid = ctx.request.query.uid || '1';
+		const trips = await Trip.find({ uid });
+		const io = ctx.state.io;
+
+		for (let i = 0; i < trips.length; i++) {
+			let trip = trips[i];
+			let detail = trip.detail;
+			let name = trip.tripName;
+
+			for (let j = 0; j < detail.length; j++) {
+				let day = detail[j];
+				for (let k = 0; k < day.length; k++) {
+					let point = day[k];
+					// 每个景点生成一个后台任务
+					taskQueue.add(async () => {
+						console.log(`准备检查 ${name} - ${point.nameOfScence}`);
+						io.emit('progress', { tripName: name, pointName: point.nameOfScence, status: '开始检测' });
+						let needUpdate = false;
+						// === 第一次校验：原始链接 ===
+						if (point.picURL === defaultPicUrl) {
+							console.log(`${name} 的【${point.nameOfScence}】使用了默认链接，需要更新`);
+							needUpdate = true;
+						} else {
+							let { isValid, width, height } = await isImageUrlValid2(point.picURL);
+							console.log(`第一次校验: ${point.nameOfScence} -> ${isValid}, ${width}x${height}`);
+							if (!isValid || (width < 100 && height < 100 && width === height)) {
+								console.log(`${name} 的【${point.nameOfScence}】图片无效，需要更新`);
+								needUpdate = true;
+							}
+						}
+
+						let finalUrl = point.picURL;
+
+						// === 如果需要更新，先从 Bing 获取新图 ===
+						if (needUpdate) {
+							const bingUrl = await getBingFirstImage(point.nameOfScence);
+
+							if (bingUrl) {
+								let { isValid, width, height } = await isImageUrlValid2(bingUrl);
+								console.log(`二次校验 Bing: ${point.nameOfScence} -> ${isValid}, ${width}x${height}`);
+								if (isValid && !(width < 100 && height < 100 && width === height)) {
+									finalUrl = bingUrl;
+									console.log(`已使用 Bing 图片: ${point.nameOfScence} => ${bingUrl}`);
+								} else{
+									const baiduUrl = await getFirstBaiduImage(point.nameOfScence);
+									if (baiduUrl) {
+										let { isValid, width, height } = await isImageUrlValid2(baiduUrl);
+										console.log(`三次校验 Baidu: ${point.nameOfScence} -> ${isValid}, ${width}x${height}`);
+										if (isValid && !(width < 100 && height < 100 && width === height)) {
+											finalUrl = baiduUrl;
+											console.log(`已使用 Baidu 图片: ${point.nameOfScence} => ${baiduUrl}`);
+										}
+									} else {
+										finalUrl = defaultPicUrl;
+										console.log(`最终回退为默认链接: ${point.nameOfScence}`);
+									}
+								}
+							}
+							// 保存修改
+							point.picURL = finalUrl;
+							trip.markModified('detail');
+							await trip.save();
+						}
+						io.emit('progress', { tripName: name, pointName: point.nameOfScence, status: `完成: ${finalUrl}` });
+					});
+				}
+			}
+		}
+
+		// ⚡ 前端立刻返回：任务已加入后台队列
+		ctx.body = { message: "任务已加入后台队列" };
+	}
+
+	async deleStory(ctx) {
+		const {id, key} = ctx.request.body
+		console.log(id)
+		console.log(key)
+		const paths = key.map(url => {
+			return url.replace(outerURL, '');
+		});
+		const asyncTasks = paths.map(path => {
+			return deleteQiniu(accessKey, secretKey, bucket, path);
+		});
+		try{
+			let results = await Promise.all(asyncTasks)
+			console.log(results)
+		}catch(err){
+			console.error('任务执行出错:', error);
+		}
+		
+		console.log('七牛云文件删除成功');
+		try {
+			const result = await Item.deleteOne({ _id: id });
+			
+			console.log('删除结果:', result);
+			ctx.body = result
+		} catch (err) {
+			console.error('删除失败:', err);
+			ctx.body = err
+		}
 	}
 }
 

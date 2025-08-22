@@ -8,11 +8,14 @@ const itemSchema = new Schema({
 	articleContent: { type: String},//图文内容
 	picURL: { type: String, required: true},
 	videoURL: { type: String},
+	localVideoURL: { type: String},
+	localVideoThumbnailURL: { type: String},
 	articleURL: { type: String},//公众号专有
 	width: { type: Number},
 	height: { type: Number},
 	articleType: {type: Number},
 	album: [],
+	localURL: [],
 	author: {type: ObjectId, ref: 'User'},
 	likes: [{type: ObjectId, ref: 'User'}],
 	collects: [{type: ObjectId, ref: 'User'}],

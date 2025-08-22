@@ -40,7 +40,9 @@ const {
 	deleteItem,
 	deleteTrip,
 	location,
-	chechUrl
+	chechUrl,
+	checkUrlQueue,
+	deleStory
 } = require('../controllers/trip');
 
 router.get('/getUploadToken', getUploadToken);
@@ -80,4 +82,6 @@ router.post('/deleteItem', deleteItem)
 router.post('/deleteTrip', deleteTrip)
 router.get('/getLocation', location)
 router.get('/checkUrl', chechUrl)
+router.get('/checkUrlQueue', checkUrlQueue)
+router.post('/deleteStoryById', deleStory)
 module.exports = router;

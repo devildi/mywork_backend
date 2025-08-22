@@ -46,15 +46,17 @@ app.use(async(ctx, next) => {
 app.use(parameter(app))
 routing(app)
 io.on('connection', (socket) => {
+  connected++
   console.log('有新的socket已连接！',socket.id)
-  io.emit('increase', ++connected);
+  io.emit('increase', connected);
   socket.on('chat message', (msg) => {
     //socket.broadcast.emit('data', msg);
     io.emit('data', msg);
   })
   socket.on("disconnect", (reason) => {
+    connected--;
     console.log('disconnect')
-    io.emit('decrease', --connected);
+    io.emit('decrease', connected);
   })
 })
 
