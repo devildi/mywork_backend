@@ -51,7 +51,7 @@ class TreasureCtl {
         const item = ctx.request.body
         console.log(item)
         const {
-            toyName,description,toyPicUrl,localUrl,picWidth,picHeight,labels,owner,price
+            toyName,description,toyPicUrl,picWidth,picHeight,labels,owner,price
         } = item
         item.toyPicUrl = outerURL + toyPicUrl
         item.id = uuidv4()

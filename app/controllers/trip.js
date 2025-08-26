@@ -421,12 +421,12 @@ class TripCtl {
 		if(type !== '3'){
 			options = {
 				scope: bucket,
-				returnBody: '{"width":"$(imageInfo.width)","height":"$(imageInfo.height)","key":"$(key)"}'
+				returnBody: '{"width":"$(imageInfo.width)","mimeType":"$(mimeType)","height":"$(imageInfo.height)","key":"$(key)"}'
 			}
 		} else {
 			options = {
 				scope: bucket,
-				returnBody: '{"width":"$(avinfo.video.width)","height":"$(avinfo.video.height)","key":"$(key)"}'
+				returnBody: '{"width":"$(avinfo.video.width)","mimeType":"$(mimeType)","height":"$(avinfo.video.height)","key":"$(key)"}'
 			}
 		}
 		var putPolicy = new qiniu.rs.PutPolicy(options)
