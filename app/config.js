@@ -7,93 +7,71 @@ const util = require('util')
 const os = require('os');
 const qiniu = require('qiniu');
 const axios = require('axios')
+require('dotenv').config();
 require('events').EventEmitter.defaultMaxListeners = 0
 
+const testURL = 'https://kyfw.12306.cn/otn/leftTicket/init'
+const scriptPath = './script/12306'
+const googleTravelURL = 'https://www.google.com/travel/things-to-do'
+const baiduBaike = 'https://baike.baidu.com/'
+const pageMock = 'https://mp.weixin.qq.com/s?__biz=MzIyMTM3MzE1MA==&mid=2247484651&idx=1&sn=2cbf9de89735555acbd30f456ec68b90&chksm=e83cf35adf4b7a4c25c72bdffc6b4c6bfa751d74a47a51b541b70f67bdc0ca020663fef050c2&token=1642341609&lang=zh_CN#rd'
 const airportCities = [
 	// 直辖市
 	"北京", "上海", "天津", "重庆",
-	
 	// 河北省
 	"石家庄", "秦皇岛", "唐山", "邯郸", "张家口", "承德", "邢台",
-	
 	// 山西省
 	"太原", "大同", "长治", "运城", "忻州", "临汾", "吕梁", "朔州",
-	
 	// 内蒙古自治区
 	"呼和浩特", "包头", "呼伦贝尔", "赤峰", "鄂尔多斯", "乌兰浩特", "通辽", "乌海", "锡林浩特", "阿拉善左旗","巴彦淖尔", "乌兰察布",
-	
 	// 辽宁省
 	"沈阳", "大连", "丹东", "锦州", "朝阳", "鞍山", "营口",
-	
 	// 吉林省
 	"长春", "延吉", "白山", "通化", "白城", "吉林市", "松原",
-	
 	// 黑龙江省
 	"哈尔滨", "大庆", "齐齐哈尔", "牡丹江", "佳木斯", "黑河", "漠河", "伊春", "鸡西",
-	
 	// 江苏省
 	"南京", "无锡", "徐州", "常州", "南通", "连云港", "盐城", "扬州", "淮安",
-	
 	// 浙江省
 	"杭州", "宁波", "温州", "舟山", "台州", "衢州", "丽水", "义乌",
-	
 	// 安徽省
 	"合肥", "黄山", "阜阳", "安庆", "池州", "芜湖", "蚌埠", "亳州",
-	
 	// 福建省
 	"福州", "厦门", "泉州", "武夷山", "连城", "三明",
-	
 	// 江西省
 	"南昌", "赣州", "景德镇", "井冈山", "九江", "宜春", "上饶",
-	
 	// 山东省
 	"济南", "青岛", "烟台", "威海", "临沂", "济宁", "日照", "潍坊", "东营", "菏泽", "枣庄",
-	
 	// 河南省
 	"郑州", "洛阳", "南阳", "信阳", "安阳", "新郑", "周口", "商丘", "驻马店",
-	
 	// 湖北省
 	"武汉", "宜昌", "襄阳", "恩施", "十堰", "神农架",
-	
 	// 湖南省
 	"长沙", "张家界", "常德", "衡阳", "怀化", "永州", "邵阳", "岳阳",
-	
 	// 广东省
 	"广州", "深圳", "珠海", "揭阳", "湛江", "梅州", "韶关", "惠州", "佛山",
-	
 	// 广西壮族自治区
 	"南宁", "桂林", "北海", "柳州", "百色", "河池", "梧州", "玉林", 
-	
 	// 海南省
 	"海口", "三亚", "琼海", "三沙",
-	
 	// 四川省
 	"成都", "绵阳", "泸州", "宜宾", "达州", "西昌", "广元", "攀枝花", "九寨沟", "康定", "巴中",
-	
 	// 贵州省
 	"贵阳", "遵义", "铜仁", "兴义", "安顺", "六盘水", "毕节",
-	
 	// 云南省
 	"昆明", "丽江", "大理", "西双版纳", "保山", "临沧", "普洱", "昭通", "文山", "德宏",
-	
 	// 西藏自治区
 	"拉萨", "林芝", "昌都", "日喀则", "阿里",
-	
 	// 陕西省
 	"西安", "榆林", "延安", "汉中", "安康", "宝鸡",
-	
 	// 甘肃省
 	"兰州", "敦煌", "嘉峪关", "庆阳", "张掖", "天水", "甘南",
-	
 	// 青海省
 	"西宁", "格尔木", "玉树", "果洛",
-	
 	// 宁夏回族自治区
 	"银川", "中卫", "固原",
-	
 	// 新疆维吾尔自治区
 	"乌鲁木齐", "喀什", "伊宁", "阿勒泰", "库尔勒", "阿克苏", "和田", "克拉玛依", "塔城", "哈密", "石河子",
-	
 	// 港澳台
 	//"香港", "澳门", "台北", "高雄", "台中", "花莲", "金门"
 ];
@@ -185,8 +163,6 @@ function sleep(time){
 		setTimeout(resolve, time)
 	})
 }
-const testURL = 'https://kyfw.12306.cn/otn/leftTicket/init'
-const scriptPath = './script/12306'
 
 async function crawler_child_process (array, Info, from, flag, index = 0){
 	let script = path.resolve(__dirname, scriptPath)
@@ -318,10 +294,6 @@ function promise2(client, str){
 		});
 	})
 }
-
-const googleTravelURL = 'https://www.google.com/travel/things-to-do'
-const baiduBaike = 'https://baike.baidu.com/'
-const pageMock = 'https://mp.weixin.qq.com/s?__biz=MzIyMTM3MzE1MA==&mid=2247484651&idx=1&sn=2cbf9de89735555acbd30f456ec68b90&chksm=e83cf35adf4b7a4c25c72bdffc6b4c6bfa751d74a47a51b541b70f67bdc0ca020663fef050c2&token=1642341609&lang=zh_CN#rd'
 
 async function getInfoFromGoogleTravel(des){
 	const browser = await puppeteer.launch({
@@ -512,23 +484,6 @@ async function getBingFirstImage(keyword = '棋盘山') {
                 await newPage.close();
             }
         });
-        // 监听网络请求
-        // await page.setRequestInterception(true);
-        // page.on('request', request => {
-        //     if (request.resourceType() === 'image') {
-        //         const url = request.url();
-        //         if (url.includes('th.bing.com/th') && !url.includes('base64')) {
-        //             targetImageUrl = url;
-        //         }
-        //         request.abort();
-        //     } else {
-        //         request.continue();
-        //     }
-        // });
-
-		// await page._client.send('Page.setDownloadBehavior', {
-        //     behavior: 'deny'
-        // });
         await page.goto('https://cn.bing.com/images', { 
             waitUntil: 'networkidle2',
             timeout: 30000
@@ -538,13 +493,6 @@ async function getBingFirstImage(keyword = '棋盘山') {
         await page.keyboard.press('Enter');
 		// 等待一下确保结果完全加载
         await new Promise(resolve => setTimeout(resolve, 2000));
-        
-        // 等待搜索结果加载
-        // await page.waitForSelector('#mmComponent_images_2', { 
-        //     timeout: 5000,
-        //     visible: true
-        // });
-        
         // 点击第一个图片
         const firstImage = await page.$('.mimg');
         if (firstImage) {
@@ -726,16 +674,17 @@ async function isImageUrlValid2(url) {
   }
 }
 module.exports = {
-	defaultPicUrl: 'https://s21.ax1x.com/2025/08/04/pVUP4XQ.jpg',
-	gaodeWebKey: '9901e426fa0ed15aba1f3f4435d999de',
-	tencentMapKey: 'GRCBZ-ZELKJ-H2FFV-FBSQT-OJM6T-ZSFK4',
-	accessKey :'o9zaFko-BJ4y7txnOpEiFJfPTalWI2LQLS3exIr1',
-	secretKey :'67dcr5piITYljpd8rkyEbDz0wugIRqOARK8Frvkk',
+	deepseekKey: process.env.DEEPSEEK_API_KEY,
+	gaodeWebKey: process.env.gaodeWebKey,
+	tencentMapKey: process.env.tencentMapKey,
+	accessKey :process.env.accessKey,
+	secretKey :process.env.secretKey,
+	appid: process.env.appid,
+	wesecret: process.env.wesecret,
 	bucket: 'nextstickeroversea',
 	outerURL: 'http://nextsticker.xyz/',
-	appid: 'wx9dd29c9565a24027',
-	wesecret: 'd8431676186d8248c2a7e01d32d31c25',
 	port: 4000,
+	defaultPicUrl: 'https://s21.ax1x.com/2025/08/04/pVUP4XQ.jpg',
 	logo: 'https://res.cloudinary.com/dnfhsjz8u/image/upload/v1620372687/u_4168080911_4188088242_fm_15_gp_0_qfgrpg.jpg',
 	secret: 'DavinciUser',
 	authority: 'wudi41538bc6dd',

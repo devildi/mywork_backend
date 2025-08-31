@@ -7,9 +7,11 @@ const { z } = require("zod");
 const { LLMChain } = require("langchain/chains");
 const path = require('path')
 const fs = require('fs').promises
-
 const filePath = path.join(__dirname, '../../results/meg.txt')
 const clipboardy = require('clipboardy');
+const {
+    deepseekKey
+} = require('../../app/config')
 
 class CalculatorTool extends Tool {
     name = "calculator";
@@ -138,7 +140,7 @@ const chatModel = new ChatOpenAI({
     maxTokens: 3000,
     configuration: {
       baseURL: "https://api.deepseek.com/v1", // DeepSeek API 地址
-      apiKey: "sk-105b4399cf0b4040b3d182214e887850" // 替换为实际 API 密钥
+      apiKey: deepseekKey // 替换为实际 API 密钥
     }
 });
 
