@@ -62,6 +62,23 @@ class TripCtl {
 		}
 	}
 
+	async updateSinglePoint(ctx){
+		const {uid, nameOfScence, des, picURL} = ctx.request.body
+		let oldTrip = await Trip.findOne({uid: uid})
+		for (const subArr of oldTrip.detail) {        
+			for (const obj of subArr) {       
+				if (obj.nameOfScence === nameOfScence) {
+					obj.picURL = picURL;          
+					obj.des = des ?? obj.des;       
+					return;
+				}
+			}
+		}
+		let newTrip = await oldTrip.save()
+		console.log(`已更新${nameOfScence}的后台信息`);
+		ctx.body = newTrip
+	}
+
 	async deleteTrip(ctx){
 		const {uid} = ctx.request.body
 		console.log('准备删除Trip，uid:', uid);
@@ -110,8 +127,8 @@ class TripCtl {
 		oldItem.articleURL = item.articleURL
 		oldItem.width = item.width
 		oldItem.height = item.height
-		let newIten = await oldItem.save()
-		ctx.body = item
+		let newItem = await oldItem.save()
+		ctx.body = newItem
 	}
 
 	async getStoryById(ctx){

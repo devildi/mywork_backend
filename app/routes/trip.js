@@ -6,6 +6,7 @@ const auth = jwt({ secret });
 
 const {
 	create,
+	updateSinglePoint,
 	createItem,
 	get,
 	getAllStory,
@@ -47,6 +48,7 @@ const {
 
 router.get('/getUploadToken', getUploadToken);
 router.post('/new', create);
+router.post('/updatePoint', updateSinglePoint);
 router.post('/newItem', createItem);
 router.post('/updateItem', updateItem);
 router.get('/getStoryById', getStoryById)
