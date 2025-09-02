@@ -70,10 +70,11 @@ class TripCtl {
 				if (obj.nameOfScence === nameOfScence) {
 					obj.picURL = picURL;          
 					obj.des = des ?? obj.des;       
-					return;
+					break;
 				}
 			}
 		}
+		oldTrip.markModified('detail');
 		let newTrip = await oldTrip.save()
 		console.log(`已更新${nameOfScence}的后台信息`);
 		ctx.body = newTrip
