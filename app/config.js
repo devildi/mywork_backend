@@ -522,6 +522,9 @@ async function getBingFirstImage(keyword = '棋盘山') {
         }
         await browser.close();
 		console.log('get url: ', targetImageUrl)
+		if('chrome-error://chromewebdata/' === targetImageUrl || !targetImageUrl){
+			return 'https://s21.ax1x.com/2025/08/04/pVUP4XQ.jpg';
+		}
         return targetImageUrl;
     } catch (error) {
         console.error('Error in getBingFirstImage:', error.message);

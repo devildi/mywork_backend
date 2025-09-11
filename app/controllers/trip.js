@@ -259,7 +259,7 @@ class TripCtl {
 	}
 
 	async getPhotosByPage(ctx){
-		const perPage = 32
+		const perPage = 30
 		//console.log(ctx.request.query.page)
 		const page = ctx.request.query.page || 1
 		const index = page - 1
@@ -629,8 +629,13 @@ class TripCtl {
 	}
 
 	async checkUrlQueue(ctx) {
-		const uid = ctx.request.query.uid || '1';
-		const trips = await Trip.find({ uid });
+		const uid = ctx.request.query.uid;
+		let trips
+		if(uid){
+			trips = await Trip.find({ uid })
+		}else {
+			trips = await Trip.find();
+		}
 		const io = ctx.state.io;
 
 		for (let i = 0; i < trips.length; i++) {
