@@ -43,6 +43,7 @@ const {
 } = require('../config');
 const fileUrl = path.join(__dirname, '../stations.txt')
 const taskQueue = require('../tools/taskQueue')
+const agenda = require('../lib/agenda') // Agenda 队列实例，用于调度行程异步补全任务
 
 class TripCtl {
 	async create(ctx){
@@ -51,15 +52,38 @@ class TripCtl {
 			trip.uid = uuidv4()
 		}
 		const tripData = await Trip.findOne({ uid: trip.uid })
+		let savedTrip
 		if(tripData){
 			tripData.cover = trip.cover
 			tripData.detail = trip.detail
-			let trip1 = await tripData.save()
-			ctx.body = trip1
+			tripData.city = trip.city
+			tripData.country = trip.country
+			tripData.tags = trip.tags
+			tripData.enrichmentStatus = 'pending' // 更新时重置补全状态，等待后台任务处理
+			tripData.enrichmentErrors = [] // 清空上次补全过程的错误信息
+			savedTrip = await tripData.save()
+			ctx.body = savedTrip
 		} else {
-			let trip2 = await new Trip(trip).save()
-			ctx.body = trip2
+			const newTrip = new Trip({
+				...trip,
+				enrichmentStatus: 'pending', // 新建行程默认进入待补全状态
+				enrichmentErrors: [], // 初始化为空，记录补全过程的错误堆栈
+			})
+			savedTrip = await newTrip.save()
+			ctx.body = savedTrip
 		}
+		this.scheduleTripEnrichment(savedTrip).catch((error) => {
+			console.error('行程异步补全任务调度失败：', error)
+		})
+	}
+
+	async scheduleTripEnrichment(tripDoc) {
+		if (!tripDoc || !tripDoc.uid) return
+		if (typeof agenda._ready === 'object' && typeof agenda._ready.then === 'function') {
+			await agenda._ready // 确保 Agenda 已完成初始化再调度任务
+		}
+		await agenda.now('trip.enrich', { uid: tripDoc.uid }) // 立即投递行程补全任务到队列
+		console.log(`已调度行程 ${tripDoc.uid} 的补全任务`)
 	}
 
 	async updateSinglePoint(ctx){
@@ -711,20 +735,22 @@ class TripCtl {
 		const {id, key} = ctx.request.body
 		console.log(id)
 		console.log(key)
-		const paths = key.map(url => {
-			return url.replace(outerURL, '');
-		});
-		const asyncTasks = paths.map(path => {
-			return deleteQiniu(accessKey, secretKey, bucket, path);
-		});
-		try{
-			let results = await Promise.all(asyncTasks)
-			console.log(results)
-		}catch(err){
-			console.error('任务执行出错:', error);
+		if(key && key.length > 0){
+			const paths = key.map(url => {
+				return url.replace(outerURL, '');
+			});
+			const asyncTasks = paths.map(path => {
+				return deleteQiniu(accessKey, secretKey, bucket, path);
+			});
+			try{
+				let results = await Promise.all(asyncTasks)
+				console.log(results)
+			}catch(err){
+				console.error('任务执行出错:', error);
+			}
+			console.log('七牛云文件删除成功');
 		}
 		
-		console.log('七牛云文件删除成功');
 		try {
 			const result = await Item.deleteOne({ _id: id });
 			
@@ -737,4 +763,13 @@ class TripCtl {
 	}
 }
 
-module.exports = new TripCtl();
+const tripCtl = new TripCtl();
+
+const proto = Object.getPrototypeOf(tripCtl);
+Object.getOwnPropertyNames(proto)
+	.filter((name) => name !== 'constructor' && typeof tripCtl[name] === 'function')
+	.forEach((name) => {
+		tripCtl[name] = tripCtl[name].bind(tripCtl);
+	});
+
+module.exports = tripCtl;

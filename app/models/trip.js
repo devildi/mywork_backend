@@ -7,11 +7,20 @@ const tripSchema = new Schema({
 	tripName: { type: String, required: true},
 	designer: { type: String, required: true},
 	domestic: {type: Number, required: true},
-	city: { type: String, required: true},
-	country: { type: String, required: true},
+	city: { type: String}, 
+	country: { type: String},
 	tags: { type: String},
 	cover: { type: String},
 	detail: [],
+	enrichmentStatus: {
+		type: String,
+		enum: ['pending', 'processing', 'done', 'failed'],
+		default: 'pending', // 记录后台补全过程的状态机
+	},
+	enrichmentErrors: {
+		type: [String],
+		default: [], // 存储补全失败时的错误信息，便于二次排查
+	},
 	createAt: { type: Date, default: Date.now() },
 })
 
