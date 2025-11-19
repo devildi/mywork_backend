@@ -12,5 +12,6 @@ const userSchema = new Schema({
 	collect: [{type: ObjectId, ref: 'Item'}],
 	follow: [{type: ObjectId, ref: 'User'}],
 	followed: [{type: ObjectId, ref: 'User'}],
+	Treasures: [{type: ObjectId, ref: 'Treasure'}]
 })
 module.exports = model('User', userSchema);

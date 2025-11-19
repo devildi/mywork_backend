@@ -11,7 +11,7 @@ const treasureSchema = new Schema({
     picHeight: { type: Number, required: true },
     description: { type: String},
     labels: { type: String, required: true },
-    owner: { type: ObjectId,ref: 'TreasureUser'},
+    owner: { type: ObjectId,ref: 'User'},
     price: { type: Number, required: true },
     sellPrice: { type: Number},
     createAt: { type: Date, required: true, default: Date.now()},

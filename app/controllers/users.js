@@ -37,13 +37,13 @@ class UsersCtl {
     console.log(from)
     const user = await User.findOne({name, password}).populate({path: 'like'})
     if(user){
-      console.log(1)
       const { _id, name } = user;
       const token = jsonwebtoken.sign({ _id, name }, secret, { expiresIn: '1d' });
       if(from === 'app') {
         ctx.body = user;
       } else {
-        ctx.body = { name, token };
+        ctx.body = user;
+        //ctx.body = { ...user, token };
       }
     } else {
       console.log(2)

@@ -121,13 +121,11 @@ class TreasureCtl {
     }
 
     async deleteItem(ctx){
-        const {id, key} = ctx.request.body
-        console.log(id)
-        console.log(key)
-        await deleteQiniu(accessKey, secretKey, bucket, key)
+        const {_id, key, toyPicUrl} = ctx.request.body
+        await deleteQiniu(accessKey, secretKey, bucket, key ? key : toyPicUrl.replace(outerURL, ''))
         console.log('删除七牛云文件成功')
         try {
-            const result = await Treasure.deleteOne({ _id: id });
+            const result = await Treasure.deleteOne({ _id: _id });
             console.log('删除结果:', result);
             ctx.body = result
         } catch (err) {

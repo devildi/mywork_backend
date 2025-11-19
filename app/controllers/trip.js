@@ -473,6 +473,7 @@ class TripCtl {
 		}
 		var putPolicy = new qiniu.rs.PutPolicy(options)
 		var uploadToken = putPolicy.uploadToken(mac)
+		//console.log(uploadToken)
 		ctx.body = uploadToken
 	}
 
