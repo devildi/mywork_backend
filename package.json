@@ -14,9 +14,9 @@
   "dependencies": {
     "@grpc/grpc-js": "^1.6.1",
     "@grpc/proto-loader": "^0.6.9",
-    "agenda": "^5.0.0",
     "@langchain/core": "^0.3.42",
     "@langchain/openai": "^0.4.5",
+    "agenda": "^5.0.0",
     "axios": "^0.21.1",
     "clipboardy": "^2.3.0",
     "dotenv": "^17.2.1",
@@ -36,6 +36,7 @@
     "nodemailer": "^6.4.17",
     "nodemon": "^2.0.2",
     "p-limit": "^6.1.0",
+    "pm2": "^6.0.13",
     "puppeteer": "^23.9.0",
     "puppeteer-cluster": "^0.24.0",
     "puppeteer-extra": "^3.3.6",
