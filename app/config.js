@@ -685,7 +685,7 @@ module.exports = {
 	appid: process.env.appid,
 	wesecret: process.env.wesecret,
 	bucket: 'nextstickeroversea',
-	outerURL: 'http://nextsticker.xyz/',
+	outerURL: 'https://nextsticker.xyz/',
 	port: 4000,
 	defaultPicUrl: 'https://s21.ax1x.com/2025/08/04/pVUP4XQ.jpg',
 	logo: 'https://res.cloudinary.com/dnfhsjz8u/image/upload/v1620372687/u_4168080911_4188088242_fm_15_gp_0_qfgrpg.jpg',
