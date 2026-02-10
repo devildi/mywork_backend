@@ -26,3 +26,10 @@ magnet:?xt=urn:btih:0f0a1984f1015d7e4a023ff3930f78a86aab648b&dn=[javdb.com]MIDA-
 magnet:?xt=urn:btih:1680a4073a5f2596d638fafeb2f07dd0c90b91ad&dn=[javdb.com]MIDA-411-C.torrent
 magnet:?xt=urn:btih:c9f4fe915650eac5dc19ed00785a27ba7a6ca264&dn=[javdb.com]HMN-748-C.torrent
 magnet:?xt=urn:btih:7e703a3c3d6a060b859127491cfdcd10ea2bce26&dn=[javdb.com]HMN-760-C.torrent
+magnet:?xt=urn:btih:643c0650e4a6707b7d3fb3f73ce3ef9097863a21&dn=[javdb.com]259LUXU-226
+magnet:?xt=urn:btih:d51598bec363aefc0c3a3ed4a81a588a056120a9&dn=[javdb.com]259LUXU-239.mp4
+magnet:?xt=urn:btih:8561c0a89421ae756eaac3e46c43a45d3dd7f93e&dn=[javdb.com]259LUXU-303.HD
+magnet:?xt=urn:btih:c6e0d1efd323e86c1f64421120198ebb0808882d&dn=[javdb.com]259LUXU-331.HD.mp4
+magnet:?xt=urn:btih:e4ca6663b6e0b92e0970a3d42e4385b0cc259d0b&dn=[javdb.com]259LUXU-330.HD
+magnet:?xt=urn:btih:8a798184bde5a1f8f34e3017b0347d78c478f7f6&dn=[javdb.com]259LUXU-351.HD
+magnet:?xt=urn:btih:8ac38e733709a7036ae8287af2653de4305eef47&dn=[javdb.com]259LUXU-389-U.mp4
