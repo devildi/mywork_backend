@@ -6,11 +6,11 @@ const AnonymizeUA = require('puppeteer-extra-plugin-anonymize-ua')
 const fs = require('fs')
 const path = require('path')
 const {
-    sleep,
-    testURL,
-    Excel,
-    mockData,
-    trainFilter,
+	sleep,
+	testURL,
+	Excel,
+	mockData,
+	trainFilter,
 	formatTimeDiff,
 	filterByProvinceAndCity,
 	sleepWithHeartbeat
@@ -22,12 +22,12 @@ let browser = null
 let page = null
 let sleepTimes = 0
 let from = {
-	"stationsName":"沈阳",
-	"stationsNameCHN":"shenyang",
-	"inWhichCity":"沈阳",
-	"inWhichProvince":"辽宁省"
+	"stationsName": "沈阳",
+	"stationsNameCHN": "shenyang",
+	"inWhichCity": "沈阳",
+	"inWhichProvince": "辽宁省"
 }
-let to = '吉林省'
+let to = '辽宁省'
 const flagData = fs.readFileSync(trainFlagPath, 'utf8')
 let number = Number(flagData.trim())
 const data = fs.readFileSync(fileUrl)
@@ -40,10 +40,10 @@ puppeteer.use(AnonymizeUA({
 }))
 crawler(mockData, from, mockData.length, number == 10086 ? 0 : number + 1)
 
-async function crawler (array, from, flag, index = 0){
-    let arrFrom = [...from.stationsNameCHN]
+async function crawler(array, from, flag, index = 0) {
+	let arrFrom = [...from.stationsNameCHN]
 	let item = array[index]
-	if(!browser){
+	if (!browser) {
 		browser = await puppeteer.launch({
 			//headless: false,
 			args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-blink-features=AutomationControlled'],
@@ -51,7 +51,7 @@ async function crawler (array, from, flag, index = 0){
 		})
 	}
 
-	if(!page){
+	if (!page) {
 		page = await browser.newPage()
 		await page.goto(testURL, { waitUntil: 'networkidle2' })
 	}
@@ -59,8 +59,8 @@ async function crawler (array, from, flag, index = 0){
 	let arrTo = [...item.stationsNameCHN]
 	console.log(`开始爬${item.stationsName}站：`)
 
-    try {
-		if(page.url() === "https://www.12306.cn/mormhweb/logFiles/error.html"){
+	try {
+		if (page.url() === "https://www.12306.cn/mormhweb/logFiles/error.html") {
 			console.log('爬虫被BAN！系统准备休眠10mins！')
 			await page.close()
 			page = null
@@ -69,14 +69,14 @@ async function crawler (array, from, flag, index = 0){
 			await sleepWithHeartbeat(browser, 1000 * 60 * 10)
 			console.log(`再次爬取${array[index].stationsName}站：`)
 			await crawler(array, from, flag, index)
-		} else{
+		} else {
 			const warningBtn = await page.$('#qd_closeDefaultWarningWindowDialog_id')
-			if(warningBtn){
+			if (warningBtn) {
 				await page.tap('#qd_closeDefaultWarningWindowDialog_id')
 			}
 
 			await page.tap('#fromStationText')
-			for (let i = 0; i < arrFrom.length; i++){
+			for (let i = 0; i < arrFrom.length; i++) {
 				await page.keyboard.press(arrFrom[i]);
 			}
 			await page.waitForSelector('#panel_cities');
@@ -97,7 +97,7 @@ async function crawler (array, from, flag, index = 0){
 			//await page.keyboard.press('Enter')
 
 			await page.tap('#toStationText')
-			for (let i = 0; i < arrTo.length; i++){
+			for (let i = 0; i < arrTo.length; i++) {
 				await page.keyboard.press(arrTo[i]);
 			}
 			await page.waitForSelector('#panel_cities');
@@ -120,9 +120,9 @@ async function crawler (array, from, flag, index = 0){
 			await page.click('#date_range>ul>li:nth-child(2)')
 
 			await sleep(2000)
-			while(true){
+			while (true) {
 				const className = await page.$eval('#query_ticket', element => element.className)
-				if(className === 'btn92s'){
+				if (className === 'btn92s') {
 					console.log(`爬${item.stationsName}站的Ajax请求完成！`)
 					break;
 				} else {
@@ -130,43 +130,43 @@ async function crawler (array, from, flag, index = 0){
 					await sleep(2000)
 				}
 			}
-			
-			const result = await page.evaluate( () => {
-					var result = []
-					var arr = document.querySelectorAll('.ticket-info')
-					if(arr && arr.length > 0){
-						for (let i = 0; i < arr.length; i++){
-							if(arr[i].querySelector('.ls>strong')){
-								let No = arr[i].querySelector('.train > div > a').innerText
-								let depart = arr[i].querySelector('.cds>.start-t ').innerText
-								let arrive = arr[i].querySelector('.cds>.color999').innerText
-								let duration = arr[i].querySelector('.ls>strong').innerText
-								result.push({No, depart, arrive, duration})
-							}
+
+			const result = await page.evaluate(() => {
+				var result = []
+				var arr = document.querySelectorAll('.ticket-info')
+				if (arr && arr.length > 0) {
+					for (let i = 0; i < arr.length; i++) {
+						if (arr[i].querySelector('.ls>strong')) {
+							let No = arr[i].querySelector('.train > div > a').innerText
+							let depart = arr[i].querySelector('.cds>.start-t ').innerText
+							let arrive = arr[i].querySelector('.cds>.color999').innerText
+							let duration = arr[i].querySelector('.ls>strong').innerText
+							result.push({ No, depart, arrive, duration })
 						}
 					}
-					return result
 				}
+				return result
+			}
 			)
 			console.log(`${from.stationsName}-->${item.stationsName}共【${result.length}】个车次`)
-			if(result.length > 0){
+			if (result.length > 0) {
 				let resultInfo = trainFilter(item.stationsName, result, item.inWhichCity, item.inWhichProvince)
-				if(resultInfo){
+				if (resultInfo) {
 					await Excel(resultInfo, to)
 				}
 			}
 			await page.close()
 			page = null
-			console.log(`${item.stationsName}站已经爬完！${index + 1}/${flag}，已经用时${formatTimeDiff(Date.now() - timestamp1)}，物理内存占用：${(process.memoryUsage().rss/1024/1024).toFixed(1)}MB；JS堆内存已分配：${(process.memoryUsage().heapTotal/1024/1024).toFixed(1)}MB，已使用：${(process.memoryUsage().heapUsed/1024/1024).toFixed(1)}MB；==========`)
+			console.log(`${item.stationsName}站已经爬完！${index + 1}/${flag}，已经用时${formatTimeDiff(Date.now() - timestamp1)}，物理内存占用：${(process.memoryUsage().rss / 1024 / 1024).toFixed(1)}MB；JS堆内存已分配：${(process.memoryUsage().heapTotal / 1024 / 1024).toFixed(1)}MB，已使用：${(process.memoryUsage().heapUsed / 1024 / 1024).toFixed(1)}MB；==========`)
 			fs.writeFileSync(trainFlagPath, index.toString());
 			index++
-			if(index === flag){
+			if (index === flag) {
 				console.log(`爬虫结束！总用时${formatTimeDiff(Date.now() - timestamp1)}，休眠${sleepTimes}次！`)
 				fs.writeFileSync(trainFlagPath, '10086');
 				await browser.close()
 				browser = null
 				return
-			} else{
+			} else {
 				await sleep(Math.random() * 2000 + 1000)
 				await crawler(array, from, flag, index)
 			}
@@ -174,11 +174,11 @@ async function crawler (array, from, flag, index = 0){
 	} catch (error) {
 		console.log(`爬虫出错，错误信息：${error.message}。10min后重新爬${item.stationsName}站！`)
 		await sleepWithHeartbeat(browser, 1000 * 60 * 10)
-		if(page){
+		if (page) {
 			await page.close()
 			page = null
 		}
-		if(browser){
+		if (browser) {
 			await browser.close()
 			browser = null
 		}

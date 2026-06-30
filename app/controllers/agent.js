@@ -1,3 +1,4 @@
+const axios = require('axios');
 const { ChatOpenAI } = require("@langchain/openai");
 const { HumanMessage, AIMessage } = require("@langchain/core/messages");
 const { AgentExecutor, createToolCallingAgent } = require("langchain/agents");
@@ -270,6 +271,45 @@ class AgentCtl {
     }
     async formatTripFromLLM(ctx){
         let userInput = ctx.request.query.chat;
+        
+        // Helper to extract clean text from HTML
+        function extractTextFromHtml(html) {
+            let text = html.replace(/<script[^>]*>([\s\S]*?)<\/script>/gi, '');
+            text = text.replace(/<style[^>]*>([\s\S]*?)<\/style>/gi, '');
+            text = text.replace(/<\/div>|<\/p>|<\/tr>|<\/li>/gi, '\n');
+            text = text.replace(/<[^>]+>/g, ' ');
+            text = text.replace(/&nbsp;/g, ' ')
+                       .replace(/&lt;/g, '<')
+                       .replace(/&gt;/g, '>')
+                       .replace(/&amp;/g, '&')
+                       .replace(/&quot;/g, '"');
+            text = text.replace(/\n\s*\n/g, '\n');
+            text = text.replace(/[ \t]+/g, ' ');
+            return text.trim();
+        }
+
+        if (userInput && (userInput.startsWith('http://') || userInput.startsWith('https://'))) {
+            try {
+                console.log(`检测到输入为URL，正在获取页面内容: ${userInput}`);
+                const response = await axios.get(userInput, {
+                    timeout: 10000,
+                    headers: {
+                        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
+                    }
+                });
+                if (response.status === 200) {
+                    const html = response.data;
+                    const pageText = extractTextFromHtml(html);
+                    console.log(`页面文本内容获取成功，长度: ${pageText.length}`);
+                    userInput = pageText.substring(0, 5000);
+                }
+            } catch (err) {
+                console.error('获取URL页面失败:', err.message);
+                ctx.body = 'error';
+                return;
+            }
+        }
+
         let template = "你是一个专业的旅行家和数据处理高级工程师，你接收到的原始文本数据如下：{topic}。这是一段旅行行程的描述，包含了多日的景点信息（如果你收到的是一段与旅行规划不相干文本，直接返回“error”）。我需要你做如下的事情：首先，为每个景点完善总结描述信息（des）,内容为该景点的看点玩法、营业时间、门票价格以及从上一个景点的前往的交通方案（每日的第一个景点不需要添加交通信息）；其次，为每个景点添加经纬度坐标；最后以数组字符串的方式返回给我，行程数据以一个大数组包裹，数组中的每个元素为每一天的景点数据集合，例如：一个2天的行程应该是类似[[], []]这样的数据结构；每个景点为一个对象，对象的key包括：nameOfScence（景点名称）、longitude（经度）、latitude（纬度）、des（景点描述）、picURL（图片地址）、category（分类，0为景点，1为酒店，2为餐饮，）。请注意：你返回的字符串必须是单行的，不允许换行，否则你会受到惩罚！";
         const prompt = ChatPromptTemplate.fromMessages([
             ["system", template]

@@ -1,5 +1,6 @@
 const axios = require('axios')
 const qiniu = require('qiniu')
+const mongoose = require('mongoose')
 const Trip = require('../models/trip')
 const Item = require('../models/item')
 const Photo = require('../models/photo')
@@ -44,6 +45,33 @@ const {
 const fileUrl = path.join(__dirname, '../stations.txt')
 const taskQueue = require('../tools/taskQueue')
 const agenda = require('../lib/agenda') // Agenda 队列实例，用于调度行程异步补全任务
+
+const cleanUrl = (url) => {
+	if (!url) return '';
+	let cleaned = url;
+	while (cleaned.startsWith('https://cdn.nextsticker.cn/https://cdn.nextsticker.cn/')) {
+		cleaned = cleaned.substring('https://cdn.nextsticker.cn/'.length);
+	}
+	return cleaned;
+};
+
+const cleanStoryUrls = (story) => {
+	if (!story) return story;
+	if (story.picURL) {
+		story.picURL = cleanUrl(story.picURL);
+	}
+	if (story.videoURL) {
+		story.videoURL = cleanUrl(story.videoURL);
+	}
+	if (story.album && Array.isArray(story.album)) {
+		story.album.forEach((item) => {
+			if (item && item.key) {
+				item.key = cleanUrl(item.key);
+			}
+		});
+	}
+	return story;
+};
 
 class TripCtl {
 	async create(ctx){
@@ -121,26 +149,52 @@ class TripCtl {
 		const item = ctx.request.body
 		console.log(item)
 		const {articleURL, picURL, articleType, album, author, videoURL} = item
+
+		const getAbsoluteUrl = (path) => {
+			if (!path) return '';
+			if (path.startsWith('http://') || path.startsWith('https://') || (outerURL && path.startsWith(outerURL))) {
+				return path;
+			}
+			return outerURL + path;
+		};
+
 		if(articleType === 2){
-			item.picURL = outerURL + picURL
-			album.forEach((item, index) => {
-				item.key = outerURL + item.key
-			})
+			item.picURL = getAbsoluteUrl(picURL)
+			if (album && Array.isArray(album)) {
+				album.forEach((albumItem) => {
+					if (albumItem) {
+						albumItem.key = getAbsoluteUrl(albumItem.key)
+					}
+				})
+			}
 		} else if(articleType === 3){
-			item.picURL = outerURL + picURL
-			item.videoURL = outerURL + videoURL
+			item.picURL = getAbsoluteUrl(picURL)
+			item.videoURL = getAbsoluteUrl(videoURL)
 		}
+
+		if (item.picURL) item.picURL = cleanUrl(item.picURL);
+		if (item.videoURL) item.videoURL = cleanUrl(item.videoURL);
+		if (item.album && Array.isArray(item.album)) {
+			item.album.forEach((albumItem) => {
+				if (albumItem && albumItem.key) {
+					albumItem.key = cleanUrl(albumItem.key);
+				}
+			});
+		}
+
 		if(articleURL){
 			const article = await Item.findOne({articleURL: articleURL})
 			if(!article){
 				let newItem = await new Item(item).save()
-				ctx.body = newItem
+				const populatedItem = await Item.findById(newItem._id).populate({path: 'author'})
+				ctx.body = cleanStoryUrls(populatedItem)
 			} else {
 				ctx.body = null
 			}
 		}else{
 			let newItem = await new Item(item).save()
-			ctx.body = 'newItem'
+			const populatedItem = await Item.findById(newItem._id).populate({path: 'author'})
+			ctx.body = cleanStoryUrls(populatedItem)
 		}
 	}
 
@@ -153,13 +207,13 @@ class TripCtl {
 		oldItem.width = item.width
 		oldItem.height = item.height
 		let newItem = await oldItem.save()
-		ctx.body = newItem
+		ctx.body = cleanStoryUrls(newItem)
 	}
 
 	async getStoryById(ctx){
 		const uid = ctx.request.query._id
 		const story = await Item.findOne({ _id: uid }).populate({path: 'likes'}).populate({path: 'author'}).populate({path: 'collects'}).populate({path: 'comments', populate: { path: 'whoseContent' }})
-		ctx.body = story;
+		ctx.body = cleanStoryUrls(story);
 	}
 
 	async get(ctx){
@@ -227,7 +281,7 @@ class TripCtl {
 		const perPage = 20
 		const page = ctx.request.query.page || 1
 		const items = await Item.find().sort({"_id": -1}).limit(page * perPage).populate({path: 'author'}).populate({path: 'likes'}).populate({path: 'collects'}).populate({path: 'comments', populate: { path: 'whoseContent' }})
-		ctx.body = items;
+		ctx.body = items.map(cleanStoryUrls);
 	}
 
 	async getStoryByAuthor(ctx){
@@ -235,7 +289,7 @@ class TripCtl {
 		const perPage = 20
 		const uid = ctx.request.query.uid
 		const items = await Item.find({"author": uid}).sort({"_id": -1}).limit(page * perPage).populate({path: 'author'}).populate({path: 'likes'}).populate({path: 'collects'}).populate({path: 'comments', populate: { path: 'whoseContent' }})
-		ctx.body = items;
+		ctx.body = items.map(cleanStoryUrls);
 	}
 
 	async getLikeOrCollectStoryByAuthor(ctx){
@@ -248,7 +302,7 @@ class TripCtl {
 		} else {
 			items = await Item.find({collects: uid}).sort({"_id": -1}).limit(page * perPage).populate({path: 'author'}).populate({path: 'likes'}).populate({path: 'collects'}).populate({path: 'comments', populate: { path: 'whoseContent' }})
 		}
-		ctx.body = items;
+		ctx.body = items.map(cleanStoryUrls);
 	}
 
 	async getStoryByPage(ctx){
@@ -258,7 +312,7 @@ class TripCtl {
 		const items = await Item.find().sort({"_id": -1}).skip(index * perPage).limit(perPage).populate({path: 'author'}).populate({path: 'likes'}).populate({path: 'collects'}).populate({path: 'comments', populate: { path: 'whoseContent' }})
 		const allItems = await Item.find()
 		const total = Math.ceil(allItems.length / perPage)
-		ctx.body = {items, total};
+		ctx.body = {items: items.map(cleanStoryUrls), total};
 	}
 
 	async getImgWAH(ctx){
@@ -364,8 +418,10 @@ class TripCtl {
 		let article = await Item.findOne({_id: articleId}).populate({path: 'likes'}).populate({path: 'author'}).populate({path: 'collects'}).populate({path: 'comments', populate: { path: 'whoseContent' }})
 		let comment = await new Comment({content, whoseContent: user}).save()
 		article.comments.push(comment)
-		let item = await article.save()
-		ctx.body = item
+		await article.save()
+		// Re-populate the comments including whoseContent for the newly saved item
+		let populatedItem = await Item.findOne({_id: articleId}).populate({path: 'likes'}).populate({path: 'author'}).populate({path: 'collects'}).populate({path: 'comments', populate: { path: 'whoseContent' }})
+		ctx.body = cleanStoryUrls(populatedItem)
 	}
 
 	async clickLike(ctx){
@@ -738,8 +794,11 @@ class TripCtl {
 		console.log(key)
 		if(key && key.length > 0){
 			const paths = key.map(url => {
-				return url.replace(outerURL, '');
-			});
+				if (typeof url === 'string') {
+					return url.includes('/') ? url.split('/').pop() : url;
+				}
+				return url;
+			}).filter(path => path && path.trim().length > 0);
 			const asyncTasks = paths.map(path => {
 				return deleteQiniu(accessKey, secretKey, bucket, path);
 			});
@@ -747,13 +806,16 @@ class TripCtl {
 				let results = await Promise.all(asyncTasks)
 				console.log(results)
 			}catch(err){
-				console.error('任务执行出错:', error);
+				console.error('任务执行出错:', err);
 			}
 			console.log('七牛云文件删除成功');
 		}
 		
 		try {
-			const result = await Item.deleteOne({ _id: id });
+			const query = mongoose.Types.ObjectId.isValid(id) 
+				? { _id: id } 
+				: { articleURL: id };
+			const result = await Item.deleteOne(query);
 			
 			console.log('删除结果:', result);
 			ctx.body = result

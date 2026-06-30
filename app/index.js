@@ -46,19 +46,33 @@ app.use(async(ctx, next) => {
 app.use(parameter(app))
 routing(app)
 io.on('connection', (socket) => {
-  connected++
-  console.log('有新的socket已连接！',socket.id)
-  io.emit('increase', connected);
+  console.log('[Socket Connection] query:', socket.handshake.query);
+  const type = socket.handshake.query.type;
+  const isChat = !type || type === 'chat';
+
+  if (isChat) {
+    connected++;
+    console.log('有新的聊天室socket已连接！', socket.id);
+    io.emit('increase', connected);
+  } else {
+    console.log(`有新的 ${type} 业务socket已连接！`, socket.id);
+  }
+
   socket.on('chat message', (msg) => {
     //socket.broadcast.emit('data', msg);
     io.emit('data', msg);
-  })
+  });
+
   socket.on("disconnect", (reason) => {
-    connected--;
-    console.log('disconnect')
-    io.emit('decrease', connected);
-  })
-})
+    if (isChat) {
+      connected--;
+      console.log('聊天室 socket 已断开连接！', socket.id);
+      io.emit('decrease', connected);
+    } else {
+      console.log(`${type} 业务 socket 已断开连接！`, socket.id);
+    }
+  });
+});
 
 server.listen(port, () => console.log(`程序启动在 ${port} 端口`))
 //app.listen(port, () => console.log(`程序启动在 ${port} 端口`))

@@ -1,0 +1,24 @@
+{
+  "from": "沈阳",
+  "departureDate": "2026-06-25",
+  "returnDate": "2026-06-29",
+  "current": 3,
+  "total": 211,
+  "cityName": "天津",
+  "status": "已取消",
+  "results": [
+    {
+      "city": "上海",
+      "totalPrice": 528,
+      "goDepartTime": "22:00",
+      "goArriveTime": "00:35",
+      "goPrice": 288,
+      "returnDepartTime": "06:35",
+      "returnArriveTime": "08:55",
+      "returnPrice": 240,
+      "returnDurating": "约2小时",
+      "departureDate": "2026-06-25",
+      "returnDate": "2026-06-29"
+    }
+  ]
+}
