@@ -1,0 +1,64 @@
+version: '3.8'
+
+services:
+  # 1. MongoDB Database Service
+  mongodb:
+    image: mongo:5.0
+    container_name: mywork-mongodb
+    restart: always
+    ports:
+      - "27017:27017" # Exposed to host for database tools (Compass/Robo 3T)
+    environment:
+      - MONGO_INITDB_ROOT_USERNAME=admin
+      - MONGO_INITDB_ROOT_PASSWORD=admin_root_password
+    volumes:
+      - mongodb_data:/data/db
+      - ./scripts/mongo-init.js:/docker-entrypoint-initdb.d/mongo-init.js:ro # Initialize app user on first boot
+    networks:
+      - mywork-network
+
+  # 2. Koa Backend Web Server
+  backend:
+    build: .
+    container_name: mywork-backend
+    restart: always
+    ports:
+      - "4000:4000"
+    shm_size: '1gb' # Allocate shared memory for Puppeteer/Chrome to prevent crashes
+    env_file:
+      - .env
+    environment:
+      - NODE_ENV=production
+      - MONGODB_URI=mongodb://woody:41538bc6dd@mongodb:27017/davinci
+    volumes:
+      - ./results:/usr/src/app/results # Persist crawl output
+    depends_on:
+      - mongodb
+    networks:
+      - mywork-network
+
+  # 3. Agenda Background Worker
+  worker:
+    build: .
+    container_name: mywork-worker
+    restart: always
+    shm_size: '1gb' # Allocate shared memory for Puppeteer/Chrome to prevent crashes
+    command: node scripts/start-enricher.js
+    env_file:
+      - .env
+    environment:
+      - NODE_ENV=production
+      - MONGODB_URI=mongodb://woody:41538bc6dd@mongodb:27017/davinci
+    volumes:
+      - ./results:/usr/src/app/results # Share crawl output directory
+    depends_on:
+      - mongodb
+    networks:
+      - mywork-network
+
+networks:
+  mywork-network:
+    driver: bridge
+
+volumes:
+  mongodb_data:
