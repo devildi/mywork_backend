@@ -1,35 +1,42 @@
 FROM node:20-slim
 
-# Install system dependencies, Google Chrome Stable (to install all required libraries), and Chinese fonts
-RUN apt-get update && apt-get install -y wget gnupg --no-install-recommends \
-    && wget -q -O - https://dl-ssl.google.com/linux/linux_signing_key.pub | gpg --dearmor -o /usr/share/keyrings/googlechrome-linux-keyring.gpg \
-    && sh -c 'echo "deb [arch=amd64 signed-by=/usr/share/keyrings/googlechrome-linux-keyring.gpg] http://dl.google.com/linux/chrome/deb/ stable main" >> /etc/apt/sources.list.d/google.list' \
-    && apt-get update \
-    && apt-get install -y \
-      google-chrome-stable \
-      fonts-ipafont-gothic \
-      fonts-wqy-zenhei \
-      fonts-thai-tlwg \
-      fonts-kacst \
-      fonts-freefont-ttf \
-      libxss1 \
-      --no-install-recommends \
+# ===== system deps =====
+RUN apt-get update && apt-get install -y \
+    ca-certificates \
+    wget \
+    gnupg \
+    fonts-wqy-zenhei \
+    fonts-noto-cjk \
+    libxss1 \
+    libasound2 \
+    libatk-bridge2.0-0 \
+    libgtk-3-0 \
+    libnss3 \
+    libx11-xcb1 \
+    libxcomposite1 \
+    libxdamage1 \
+    libxrandr2 \
+    xdg-utils \
+    --no-install-recommends \
     && rm -rf /var/lib/apt/lists/*
 
-# Set working directory
+# ===== working dir =====
 WORKDIR /usr/src/app
 
-# Copy dependency definitions
+# ===== env =====
+ENV NODE_ENV=production
+ENV PUPPETEER_SKIP_CHROMIUM_DOWNLOAD=true
+
+# ===== install deps =====
 COPY package*.json ./
 
-# Install npm dependencies (including Puppeteer which downloads its own Chromium)
-RUN npm ci --only=production
+# 生产依赖安装（避免 dev 依赖污染）
+RUN npm ci --omit=dev
 
-# Copy the rest of the application files
+# ===== app =====
 COPY . .
 
-# Expose backend port
 EXPOSE 4000
 
-# Default command to run the backend
-CMD [ "npm", "start" ]
+# 👉 不依赖 cross-env（关键修复）
+CMD ["npm", "start"]
