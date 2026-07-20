@@ -1,0 +1,16 @@
+[
+  {
+    "name": "userInfo",
+    "value": "1784534699452.PC.1219790.67c9f0356b83a116851c3d6e421d7440.%7B%22id%22%3A1219790%2C%22uuid%22%3A%2208afc8df1b8f4495a8a8a05d871002b5%22%2C%22realname%22%3A%22%E5%90%B4%E8%BF%AA%22%2C%22username%22%3A%22LNrtv002180%22%2C%22is_admin%22%3Afalse%2C%22org_id%22%3A417%2C%22signature%22%3A%227101e615058141fd812f2cf958840bda%22%7D",
+    "domain": "zyjs.lngbzx.gov.cn",
+    "path": "/",
+    "expires": 1787126699.065701,
+    "size": 330,
+    "httpOnly": false,
+    "secure": false,
+    "session": false,
+    "priority": "Medium",
+    "sameParty": false,
+    "sourceScheme": "Secure"
+  }
+]
