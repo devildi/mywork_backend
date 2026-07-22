@@ -5,3 +5,8 @@ npm-debug.log
 .env
 *.secret
 *.key
+
+# 运行时自动生成的文件
+results/
+eng.traineddata
+*.traineddata
