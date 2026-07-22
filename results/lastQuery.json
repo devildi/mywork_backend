@@ -1,0 +1,1 @@
+{"from":"沈阳","to":"辽宁省","filterSettings":{"gOrD":{"enabled":true,"prefixes":"G, D"},"overnight":{"enabled":true,"departBefore":1,"departAfter":17,"arriveBefore":14,"arriveAfter":4,"maxDuration":19},"daytrip":{"enabled":true,"departAfter":7,"arriveBefore":12,"maxDuration":2}}}
