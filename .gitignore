@@ -6,8 +6,10 @@ npm-debug.log
 *.secret
 *.key
 
+# 本地虚拟环境
+ocr_env/
+venv/
+
 # 运行时自动生成的文件
-results/captcha.png
-results/*_cookies.json
 eng.traineddata
 *.traineddata
