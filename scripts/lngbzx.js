@@ -263,16 +263,30 @@ function askManualCaptcha() {
   });
 }
 
-// 终端交互询问用户：是否选课，选课则直接拽入选课文件，不选课直接回车
-function askCourseFileOrSkip(promptMsg = '是否选课，选课则直接拽入选课文件，不选课直接回车: ') {
+// 终端交互询问用户：是否选课，选课则直接拽入选课文件，不选课直接回车 (倒计时 30 秒无输入自动跳过)
+function askCourseFileOrSkip(promptMsg = '是否选课，选课则直接拽入选课文件，不选课直接回车(30秒无输入自动跳过): ', timeoutMs = 30000) {
   const rl = readline.createInterface({
     input: process.stdin,
     output: process.stdout
   });
   return new Promise(resolve => {
+    let resolved = false;
+    const timer = setTimeout(() => {
+      if (!resolved) {
+        resolved = true;
+        rl.close();
+        console.log('\n⏱️ [超时 30 秒未接收到输入，默认按回车跳过选课，继续执行自动学习流程]');
+        resolve('');
+      }
+    }, timeoutMs);
+
     rl.question(promptMsg, answer => {
-      rl.close();
-      resolve(answer.trim());
+      if (!resolved) {
+        resolved = true;
+        clearTimeout(timer);
+        rl.close();
+        resolve(answer.trim());
+      }
     });
   });
 }

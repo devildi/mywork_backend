@@ -1,10 +1,10 @@
 [
   {
     "name": "userInfo",
-    "value": "1784788287197.PC.1219790.e2d058e5dcbc3e48fe827d47520c11fe.%7B%22id%22%3A1219790%2C%22uuid%22%3A%2208afc8df1b8f4495a8a8a05d871002b5%22%2C%22realname%22%3A%22%E5%90%B4%E8%BF%AA%22%2C%22username%22%3A%22LNrtv002180%22%2C%22is_admin%22%3Afalse%2C%22org_id%22%3A417%2C%22signature%22%3A%22b6c8ae678c4b4733b04d91089bb74e26%22%7D",
+    "value": "1784794756185.PC.1219790.5e2e9cc3721e0d162c170549891914a0.%7B%22id%22%3A1219790%2C%22uuid%22%3A%2208afc8df1b8f4495a8a8a05d871002b5%22%2C%22realname%22%3A%22%E5%90%B4%E8%BF%AA%22%2C%22username%22%3A%22LNrtv002180%22%2C%22is_admin%22%3Afalse%2C%22org_id%22%3A417%2C%22signature%22%3A%221683425d10dc4b3f9fd16e64eb6de4d1%22%7D",
     "domain": "zyjs.lngbzx.gov.cn",
     "path": "/",
-    "expires": 1787380287.077548,
+    "expires": 1787386756.147882,
     "size": 330,
     "httpOnly": false,
     "secure": false,
