@@ -1,12 +1,11 @@
 const puppeteer = require('puppeteer-extra');
 const StealthPlugin = require('puppeteer-extra-plugin-stealth');
 puppeteer.use(StealthPlugin());
-const axios = require('axios');
 const fs = require('fs');
 const path = require('path');
 const readline = require('readline');
 
-const Tesseract = require('tesseract.js');
+const { execFile } = require('child_process');
 
 // 配置信息
 const TARGET_URL = 'https://zyjs.lngbzx.gov.cn/pc/index.html#/';
@@ -46,10 +45,10 @@ async function cleanCaptchaInPage(page, aggressive = true) {
     const data = imgData.data;
 
     // 根据模式切换阈值
-    const diffMin       = aggressive ? 35  : 25;
-    const avgMax        = aggressive ? 190 : 210;
-    const brightMax     = aggressive ? 200 : 220;
-    const noiseThresh   = aggressive ? 7   : 8;
+    const diffMin = aggressive ? 35 : 25;
+    const avgMax = aggressive ? 190 : 210;
+    const brightMax = aggressive ? 200 : 220;
+    const noiseThresh = aggressive ? 7 : 8;
 
     const grid = [];
     for (let y = 0; y < rawHeight; y++) {
@@ -115,7 +114,7 @@ async function cleanCaptchaInPage(page, aggressive = true) {
       }
     }
 
-    const result = { fullImage: destCanvas.toDataURL('image/png'), segmentDataUrls: [] };
+    const result = { fullImage: destCanvas.toDataURL('image/png'), rawImage: srcCanvas.toDataURL('image/png'), segmentDataUrls: [] };
 
     // 垂直投影直方图 → 字符分割
     const projection = new Array(rawWidth).fill(0);
@@ -176,108 +175,77 @@ async function cleanCaptchaInPage(page, aggressive = true) {
   }, aggressive);
 }
 
-// 混合 OCR 识别引擎
-// segmentUrls: 按垂直投影分割出的 4 张单字符图 (base64 dataURL)，用于逐位识别
-async function recognizeCaptcha(base64DataUrl, imagePath, segmentUrls = []) {
-  const target = imagePath || base64DataUrl;
+const OCR_SCRIPT = path.join(__dirname, 'lngbzx_ocr.py');
+const VENV_PYTHON = path.join(__dirname, '../ocr_env/bin/python3');
 
-  // ── 方案 1: 本地 Tesseract — 多 PSM 模式轮询 (同一 Worker 复用) ──
-  try {
-    const worker = await Tesseract.createWorker('eng');
-    const psmModes = [
-      { mode: Tesseract.PSM.SINGLE_WORD,  name: 'SINGLE_WORD' },
-      { mode: Tesseract.PSM.SINGLE_LINE,  name: 'SINGLE_LINE' },
-      { mode: Tesseract.PSM.SPARSE_TEXT,  name: 'SPARSE_TEXT' },
-    ];
-
-    for (const { mode, name } of psmModes) {
-      try {
-        await worker.setParameters({
-          tessedit_char_whitelist: '0123456789',
-          tessedit_pageseg_mode: mode,
-        });
-        const { data } = await worker.recognize(target);
-        if (data && data.text) {
-          const cleanText = data.text.replace(/[^0-9]/g, '').trim();
-          if (cleanText.length === 4) {
-            console.log(`[lngbzx.js] 本地 Tesseract PSM ${name}(4位成功): ${cleanText}`);
-            await worker.terminate();
-            return cleanText;
-          }
-        }
-      } catch (_) { /* 单个 PSM 模式失败，继续下一个 */ }
-    }
-
-    await worker.terminate();
-  } catch (tessErr) {
-    console.warn(`[lngbzx.js] 本地 Tesseract 多 PSM 均未命中: ${tessErr.message}`);
-  }
-
-  // ── 方案 2: 逐位 OCR — 垂直投影分割后的单字符识别 ──
-  if (segmentUrls && segmentUrls.length === 4) {
-    try {
-      const worker = await Tesseract.createWorker('eng');
-      await worker.setParameters({
-        tessedit_char_whitelist: '0123456789',
-        tessedit_pageseg_mode: Tesseract.PSM.SINGLE_CHAR,
-      });
-
-      const digits = [];
-      for (let i = 0; i < segmentUrls.length; i++) {
-        const { data } = await worker.recognize(segmentUrls[i]);
-        const ch = data.text ? data.text.replace(/[^0-9]/g, '').trim() : '';
-        digits.push(ch.length === 1 ? ch : (ch.length > 1 ? ch[0] : '?'));
+function execOcr(args, timeoutMs = 15000) {
+  const pythonBin = fs.existsSync(VENV_PYTHON) ? VENV_PYTHON : 'python3';
+  return new Promise((resolve, reject) => {
+    execFile(pythonBin, [OCR_SCRIPT, ...args], { timeout: timeoutMs }, (err, stdout, stderr) => {
+      if (err) {
+        reject(new Error(stdout.trim() || stderr.trim() || err.message));
+      } else {
+        resolve(stdout.trim());
       }
-      await worker.terminate();
+    });
+  });
+}
 
-      const result = digits.join('');
-      if (result.length === 4 && !result.includes('?')) {
-        console.log(`[lngbzx.js] 逐位分割 OCR 成功: ${result} (每位: ${digits.join(', ')})`);
+// 混合 OCR 识别引擎
+// imagePath: 清洗后保存到本地的验证码图片路径
+// segmentUrls: 按垂直投影分割出的 4 张单字符图 (base64 dataURL)，用于逐位识别
+// rawImagePath: 未经二值化清洗的原始验证码图片路径 (ddddocr 首选)
+async function recognizeCaptcha(imagePath, segmentUrls = [], rawImagePath = null) {
+
+  // ── 优先方案 0: 原始图片 ddddocr / OCR 识别 ──
+  if (rawImagePath && fs.existsSync(rawImagePath)) {
+    try {
+      const result = await execOcr([rawImagePath, 'full']);
+      if (result && result.length === 4 && /^\d{4}$/.test(result)) {
+        console.log(`[lngbzx.js] 本地 OCR (原图模式) 识别成功: ${result}`);
         return result;
       }
-      console.warn(`[lngbzx.js] 逐位 OCR 结果不完整: ${result}`);
-    } catch (tessErr) {
-      console.warn(`[lngbzx.js] 逐位 OCR 失败: ${tessErr.message}`);
+    } catch (err) {
+      console.warn(`[lngbzx.js] 本地 OCR (原图模式) 未识别出有效4位数字`);
     }
   }
 
-  // ── 方案 3: 云端 OCR.space (多 API Key + 引擎备用) ──
-  const apiKeys = ['K88298138988957', 'K87889888888957', 'helloworld'];
-  const engines = ['2', '1'];
-
-  for (const apiKey of apiKeys) {
-    for (const engine of engines) {
-      try {
-        const response = await axios.post('https://api.ocr.space/parse/image',
-          new URLSearchParams({
-            apikey: apiKey,
-            base64Image: base64DataUrl,
-            language: 'eng',
-            isOverlayRequired: 'false',
-            filetype: 'PNG',
-            OCREngine: engine,
-            scale: 'true',
-            detectOrientation: 'false'
-          }).toString(),
-          {
-            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-            timeout: 15000
-          }
-        );
-
-        if (response.data && response.data.ParsedResults && response.data.ParsedResults.length > 0) {
-          const parsed = response.data.ParsedResults[0];
-          if (parsed && parsed.ParsedText) {
-            const cleanText = parsed.ParsedText.replace(/[^0-9]/g, '').trim();
-            if (cleanText.length === 4) {
-              console.log(`[lngbzx.js] 云端 OCR.space 成功 (Key: ${apiKey.slice(0, 4)}..., Engine ${engine}): ${cleanText}`);
-              return cleanText;
-            }
-          }
-        }
-      } catch (_) { /* 单个 Key/引擎失败，轮询下一个 */ }
+  // ── 方案 1: 清洗后整图识别 ──
+  if (imagePath && fs.existsSync(imagePath)) {
+    try {
+      const result = await execOcr([imagePath, 'full']);
+      if (result && result.length === 4 && /^\d{4}$/.test(result)) {
+        console.log(`[lngbzx.js] 本地 OCR (清洗整图) 识别成功: ${result}`);
+        return result;
+      }
+    } catch (err) {
+      console.warn(`[lngbzx.js] 本地 OCR (清洗整图) 未识别出有效4位数字`);
     }
   }
+
+  // ── 方案 2: 逐位 OCR — 垂直投影分割后的单字符 PaddleOCR 识别 ──
+  if (segmentUrls && segmentUrls.length === 4) {
+    const segFiles = [];
+    try {
+      for (let i = 0; i < segmentUrls.length; i++) {
+        const segPath = path.join(resultsDir, `captcha_seg_${Date.now()}_${i}.png`);
+        const segBase64 = segmentUrls[i].replace(/^data:image\/png;base64,/, '');
+        fs.writeFileSync(segPath, segBase64, 'base64');
+        segFiles.push(segPath);
+      }
+
+      const result = await execOcr([imagePath, 'segments', ...segFiles]);
+      if (result && result.length === 4 && /^\d{4}$/.test(result)) {
+        console.log(`[lngbzx.js] 本地 PaddleOCR 逐位分割识别成功: ${result}`);
+        return result;
+      }
+    } catch (err) {
+      console.warn(`[lngbzx.js] 本地 PaddleOCR 逐位分割识别失败: ${err.message}`);
+    } finally {
+      segFiles.forEach(f => { try { fs.unlinkSync(f); } catch (_) { } });
+    }
+  }
+
   return null;
 }
 
@@ -329,13 +297,13 @@ function cleanDraggedFilePath(inputPath) {
     try {
       const decoded = decodeURIComponent(str);
       if (fs.existsSync(decoded)) return decoded;
-    } catch (e) {}
+    } catch (e) { }
   }
   if (unescaped.includes('%')) {
     try {
       const decoded = decodeURIComponent(unescaped);
       if (fs.existsSync(decoded)) return decoded;
-    } catch (e) {}
+    } catch (e) { }
   }
 
   return unescaped;
@@ -475,7 +443,7 @@ async function readFileToWorkbook(cleanPath) {
       if (zipTest.getEntry('word/document.xml')) {
         isDocxZip = true;
       }
-    } catch (e) {}
+    } catch (e) { }
   }
 
   if (isDocx || isDocxZip) {
@@ -491,8 +459,8 @@ async function readFileToWorkbook(cleanPath) {
   }
 
   const isXlsx = buf[0] === 0x50 && buf[1] === 0x4B;               // ZIP magic (.xlsx)
-  const isXls  = buf[0] === 0xD0 && buf[1] === 0xCF;               // OLE2 magic (.xls)
-  const isCsv  = ext === '.csv' || (!isXlsx && !isXls);
+  const isXls = buf[0] === 0xD0 && buf[1] === 0xCF;               // OLE2 magic (.xls)
+  const isCsv = ext === '.csv' || (!isXlsx && !isXls);
   const bookType = isXls ? 'xls' : (isXlsx ? 'xlsx' : undefined);
 
   // 1. XLSX.readFile (显式 bookType)
@@ -610,31 +578,31 @@ async function processCourseFile(filePathInput) {
       const sheet = workbook.Sheets[sheetName];
       const rows = XLSX.utils.sheet_to_json(sheet, { header: 1, defval: '' });
 
-// 专门校验提取的主讲人姓名是否合法 (严禁为纯数字、课时、学分、状态等)
-function isValidTeacherName(str) {
-  if (!str) return false;
-  const s = str.trim();
-  if (!s || s === '未指定') return false;
+      // 专门校验提取的主讲人姓名是否合法 (严禁为纯数字、课时、学分、状态等)
+      function isValidTeacherName(str) {
+        if (!str) return false;
+        const s = str.trim();
+        if (!s || s === '未指定') return false;
 
-  // 1. 过滤纯数字、小数、百分数 (如 40, 16.0, 100%)
-  if (/^\d+(\.\d+)?%?$/.test(s)) return false;
-  // 2. 过滤带单位的数字 (如 16学时, 40课时, 2学分, 120分钟, 1.5小时)
-  if (/^\d+(\.\d+)?[学课]?[时分秒积分]?$/.test(s)) return false;
+        // 1. 过滤纯数字、小数、百分数 (如 40, 16.0, 100%)
+        if (/^\d+(\.\d+)?%?$/.test(s)) return false;
+        // 2. 过滤带单位的数字 (如 16学时, 40课时, 2学分, 120分钟, 1.5小时)
+        if (/^\d+(\.\d+)?[学课]?[时分秒积分]?$/.test(s)) return false;
 
-  // 3. 过滤常见非教师名字关键字
-  if (
-    s.includes('课时') || s.includes('学时') || s.includes('学分') || s.includes('分钟') ||
-    s.includes('小时') || s.includes('分值') || s.includes('序号') || s.includes('编号') ||
-    s.includes('简介') || s.includes('介绍') || s.includes('状态') || s.includes('类型') ||
-    s.includes('选修') || s.includes('必修') || s.includes('类别') || s.includes('备注') ||
-    s.includes('学期') || s.includes('时间') || s.includes('日期') || s.includes('课程') ||
-    s.includes('学段') || s.includes('学科')
-  ) {
-    return false;
-  }
+        // 3. 过滤常见非教师名字关键字
+        if (
+          s.includes('课时') || s.includes('学时') || s.includes('学分') || s.includes('分钟') ||
+          s.includes('小时') || s.includes('分值') || s.includes('序号') || s.includes('编号') ||
+          s.includes('简介') || s.includes('介绍') || s.includes('状态') || s.includes('类型') ||
+          s.includes('选修') || s.includes('必修') || s.includes('类别') || s.includes('备注') ||
+          s.includes('学期') || s.includes('时间') || s.includes('日期') || s.includes('课程') ||
+          s.includes('学段') || s.includes('学科')
+        ) {
+          return false;
+        }
 
-  return true;
-}
+        return true;
+      }
 
       // 1. 全局精准定位表头列索引 (处理 序号、课程名称、主讲人、主讲人简介 等列)
       let courseColIdx = -1;
@@ -835,7 +803,7 @@ async function run() {
   while (!loggedIn) {
     attempt++;
     console.log(`\n=================== 尝试登录 [第 ${attempt} 次] ===================`);
-    
+
     try {
       // 若因网络异常导致当前页面状态掉线，重定向刷新登录页
       const currentUrl = page.url();
@@ -862,23 +830,26 @@ async function run() {
       const captchaResult = await cleanCaptchaInPage(page);
       if (!captchaResult || !captchaResult.fullImage) {
         console.log('提取验证码失败，正在重试...');
-        await page.click('img.image').catch(() => {});
+        await page.click('img.image').catch(() => { });
         await sleep(2000);
         continue;
       }
 
-      const cleanedBase64 = captchaResult.fullImage;
-      const base64Data = cleanedBase64.replace(/^data:image\/png;base64,/, "");
       const localCaptchaPath = path.join(resultsDir, 'captcha.png');
-      fs.writeFileSync(localCaptchaPath, base64Data, 'base64');
+      const rawCaptchaPath = path.join(resultsDir, 'captcha_raw.png');
+
+      fs.writeFileSync(localCaptchaPath, captchaResult.fullImage.replace(/^data:image\/png;base64,/, ""), 'base64');
+      if (captchaResult.rawImage) {
+        fs.writeFileSync(rawCaptchaPath, captchaResult.rawImage.replace(/^data:image\/png;base64,/, ""), 'base64');
+      }
       console.log(`验证码图片已保存至: ${localCaptchaPath}`);
 
       let verifyCode = '';
 
       // 前几轮尝试自动 OCR，失败后降级到命令行输入
       if (attempt <= MAX_AUTO_RETRIES) {
-        console.log('正在进行验证码 OCR 智能识别 (多PSM + 逐位分割 + 云端兜底)...');
-        verifyCode = await recognizeCaptcha(cleanedBase64, localCaptchaPath, captchaResult.segmentDataUrls);
+        console.log('正在进行验证码 OCR 智能识别 (优先原图模式)...');
+        verifyCode = await recognizeCaptcha(localCaptchaPath, captchaResult.segmentDataUrls, rawCaptchaPath);
         if (verifyCode && verifyCode.length === 4) {
           console.log(`OCR 识别结果 (4位数字): ${verifyCode}`);
         } else {
@@ -886,20 +857,20 @@ async function run() {
           console.log('OCR 未成功，尝试保守预处理模式重试同一张验证码...');
           const gentleResult = await cleanCaptchaInPage(page, false);
           if (gentleResult && gentleResult.fullImage) {
-            const gentleBase64 = gentleResult.fullImage;
-            fs.writeFileSync(localCaptchaPath, gentleBase64.replace(/^data:image\/png;base64,/, ""), 'base64');
-            verifyCode = await recognizeCaptcha(gentleBase64, localCaptchaPath, gentleResult.segmentDataUrls);
+            const gentleBase64 = gentleResult.fullImage.replace(/^data:image\/png;base64,/, "");
+            fs.writeFileSync(localCaptchaPath, gentleBase64, 'base64');
+            verifyCode = await recognizeCaptcha(localCaptchaPath, gentleResult.segmentDataUrls, rawCaptchaPath);
             if (verifyCode && verifyCode.length === 4) {
               console.log(`OCR 二次识别成功 (保守模式): ${verifyCode}`);
             } else {
               console.log('保守模式也失败，刷新验证码重新尝试...');
-              await page.click('img.image').catch(() => {});
+              await page.click('img.image').catch(() => { });
               await sleep(2000);
               continue;
             }
           } else {
             console.log('验证码提取失败，刷新重试...');
-            await page.click('img.image').catch(() => {});
+            await page.click('img.image').catch(() => { });
             await sleep(2000);
             continue;
           }
@@ -927,7 +898,7 @@ async function run() {
         // 1. Element UI error/warning message toast
         const errorEl = document.querySelector('.el-message--error, .el-message--warning');
         if (errorEl && errorEl.textContent) return errorEl.textContent.trim();
-        
+
         // 2. Element UI general message (not success)
         const msgEl = document.querySelector('.el-message');
         if (msgEl && !msgEl.classList.contains('el-message--success') && !msgEl.textContent.includes('成功')) {
@@ -979,7 +950,7 @@ async function run() {
       if (!finalError && !isFormStillPresent && (hasRealAuthToken || hasStorageToken)) {
         console.log('🎉 登录成功！');
         loggedIn = true;
-        
+
         // 保存 Cookies
         fs.writeFileSync(cookiePath, JSON.stringify(cookies, null, 2));
         console.log(`登录凭证 (Cookies) 已保存至: ${cookiePath}`);
@@ -999,7 +970,7 @@ async function run() {
         await page.evaluate(() => {
           const confirmBtn = document.querySelector('.el-message-box__btns button, .el-dialog__headerbtn');
           if (confirmBtn) confirmBtn.click();
-        }).catch(() => {});
+        }).catch(() => { });
 
         // 刷新验证码图片并等待 DOM/网络渲染完毕，准备下一次尝试
         try {
@@ -1011,7 +982,7 @@ async function run() {
           await page.waitForFunction(() => {
             const img = document.querySelector('img.image');
             return img && img.complete && img.naturalWidth > 0;
-          }, { timeout: 5000 }).catch(() => {});
+          }, { timeout: 5000 }).catch(() => { });
           await sleep(1500);
         } catch (clickErr) {
           console.warn('⚠️ 刷新验证码失败（可能页面已发生跳转或元素已失效）:', clickErr.message);
@@ -1089,7 +1060,7 @@ async function run() {
       const dialogBtnClicked = await targetPage.evaluate(() => {
         const targetTexts = ['确定', '确认', '我知道了', '继续学习', '开始学习', '进入学习'];
         const allElements = Array.from(document.querySelectorAll('button, a, div, span'));
-        
+
         const btns = allElements.filter(el => {
           const style = window.getComputedStyle(el);
           const isVisible = style && style.display !== 'none' && style.visibility !== 'hidden' && el.offsetWidth > 0 && el.offsetHeight > 0;
@@ -1097,7 +1068,7 @@ async function run() {
           const txt = el.textContent ? el.textContent.trim() : '';
           return targetTexts.some(t => txt === t);
         });
-        
+
         if (btns.length > 0) {
           const popupBtn = btns.find(el => {
             let p = el.parentElement;
@@ -1163,7 +1134,7 @@ async function run() {
             videos.forEach(v => {
               // 如果视频暂停了且未播放完毕，自动尝试触发播放
               if (v.paused && !v.ended) {
-                v.play().catch(() => {});
+                v.play().catch(() => { });
               }
               if (v.ended || (v.duration > 0 && v.currentTime >= v.duration - 0.5)) {
                 endedCount++;
@@ -1266,7 +1237,7 @@ async function run() {
         });
         if (confirmBtns[0]) confirmBtns[0].click();
       });
-    } catch (e) {}
+    } catch (e) { }
   }
 
   // 核心功能：进入“选课中心”，依次搜索并按规则进行选课 (异步搜索 + ul.course > li 结构)
@@ -1292,9 +1263,9 @@ async function run() {
 
         await page.evaluate((selector, txt) => {
           const input = document.querySelector(selector) ||
-                        document.querySelector('.tabSelect > div.input > input[type=text]') ||
-                        document.querySelector('.tabSelect div.input input') ||
-                        document.querySelector('.tabSelect input');
+            document.querySelector('.tabSelect > div.input > input[type=text]') ||
+            document.querySelector('.tabSelect div.input input') ||
+            document.querySelector('.tabSelect input');
           if (input) {
             input.focus();
             input.value = '';
@@ -1305,9 +1276,9 @@ async function run() {
 
         const searchInputHandle = await page.evaluateHandle((selector) => {
           return document.querySelector(selector) ||
-                 document.querySelector('.tabSelect > div.input > input[type=text]') ||
-                 document.querySelector('.tabSelect div.input input') ||
-                 document.querySelector('.tabSelect input');
+            document.querySelector('.tabSelect > div.input > input[type=text]') ||
+            document.querySelector('.tabSelect div.input input') ||
+            document.querySelector('.tabSelect input');
         }, EXACT_INPUT_SELECTOR);
 
         if (searchInputHandle && searchInputHandle.asElement()) {
@@ -1320,8 +1291,8 @@ async function run() {
         // 2. 输入完内容后点击搜索按钮 (class="el-icon-search")
         const searchClicked = await page.evaluate(() => {
           const searchIcon = document.querySelector('#app > div.is_cont > div:nth-child(3) > div > ul > li.tabSelect .el-icon-search') ||
-                             document.querySelector('.tabSelect .el-icon-search') ||
-                             document.querySelector('.el-icon-search');
+            document.querySelector('.tabSelect .el-icon-search') ||
+            document.querySelector('.el-icon-search');
 
           if (searchIcon) {
             const parentBtn = searchIcon.closest('button, a, div, span, i') || searchIcon;
@@ -1340,7 +1311,7 @@ async function run() {
         await page.waitForFunction(() => {
           const ul = document.querySelector('ul.course');
           return ul !== null;
-        }, { timeout: 8000 }).catch(() => {});
+        }, { timeout: 8000 }).catch(() => { });
         await sleep(2000);
 
         // 4. 分析 ul.course 下面的 li 元素 (如果无任何 li 则证明无搜索结果)
@@ -1372,7 +1343,7 @@ async function run() {
 
             const btn = stadyBtn || textBtn;
             const btnText = btn ? (btn.textContent ? btn.textContent.trim() : '') : '';
-            
+
             // 严格控制：当且仅当按钮文字包含“我要选课”、“立即选课”或等于“选课”时，才算作可选
             const canSelect = btnText.includes('我要选课') || btnText.includes('立即选课') || (btnText === '选课');
 
@@ -1485,7 +1456,7 @@ async function run() {
 
       // 查找包含“开始学习”或“继续学习”的第一个课程按钮
       console.log('正在查找未完成课程列表中包含“开始学习”或“继续学习”的课程...');
-      
+
       const courseBtnHandle = await page.evaluateHandle(() => {
         const btns = Array.from(document.querySelectorAll('button, a, div, span'))
           .filter(el => {
@@ -1532,9 +1503,9 @@ async function run() {
         newPage = await newPagePromise;
         console.log('检测到打开了新课程页面，正在切换激活焦点...');
         await newPage.bringToFront();
-        
+
         // 等待新页面基础网络资源加载
-        await newPage.waitForNetworkIdle({ timeout: 8000 }).catch(() => {});
+        await newPage.waitForNetworkIdle({ timeout: 8000 }).catch(() => { });
         await sleep(3000);
 
         // 检测是否有初始弹窗并确定
@@ -1548,7 +1519,7 @@ async function run() {
       } finally {
         if (newPage && !newPage.isClosed()) {
           console.log('关闭当前课程播放页面，准备切回主列表页...');
-          await newPage.close().catch(() => {});
+          await newPage.close().catch(() => { });
         }
         // 切回主页面焦点并稍作等待
         await page.bringToFront();
@@ -1563,7 +1534,7 @@ async function run() {
     throw err;
   } finally {
     console.log('正在关闭当前浏览器实例...');
-    await browser.close().catch(() => {});
+    await browser.close().catch(() => { });
   }
 }
 
