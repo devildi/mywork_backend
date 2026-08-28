@@ -38,5 +38,5 @@ COPY . .
 
 EXPOSE 4000
 
-# 👉 不依赖 cross-env（关键修复）
-CMD ["npm", "start"]
+# 👉 不依赖 cross-env（直接使用 node 启动）
+CMD ["node", "app/index.js"]
