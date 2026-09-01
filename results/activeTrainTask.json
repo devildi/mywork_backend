@@ -21,9 +21,9 @@
       "maxDuration": 2
     }
   },
-  "current": 9,
+  "current": 10,
   "total": 194,
-  "stationName": "沈阳南",
+  "stationName": "沈阳西",
   "status": "已取消",
   "results": [
     {
@@ -49,6 +49,14 @@
       "city": "沈阳",
       "province": "辽宁省",
       "daytrip": "G8042  D7631  G704  G8184  G706  C1153  D7615  G8050"
+    },
+    {
+      "destination": "沈阳南",
+      "hasGOrD": "D7603  G8172  D7607  G9122  G8176  G704  G8088  G706  D7615  G8180  G9128  G2649  G720  D7683  G9130  D7669  G1229  G787  G153  G8026",
+      "overNight": "",
+      "city": "沈阳",
+      "province": "辽宁省",
+      "daytrip": "G8172  D7607  G9122  G8176  G704  G8088  G706  C1153  D7615"
     }
   ],
   "resolvedFrom": {
