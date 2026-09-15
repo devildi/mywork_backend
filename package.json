@@ -20,6 +20,7 @@
     "agenda": "^5.0.0",
     "axios": "^0.21.1",
     "clipboardy": "^2.3.0",
+    "cross-env": "^10.1.0",
     "dotenv": "^17.2.1",
     "exceljs": "^4.2.1",
     "iconv-lite": "^0.7.3",

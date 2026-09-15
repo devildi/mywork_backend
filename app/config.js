@@ -716,7 +716,7 @@ async function isImageUrlValid2(url) {
 module.exports = {
 	deepseekKey: process.env.DEEPSEEK_API_KEY,
 	gaodeWebKey: process.env.gaodeWebKey,
-	tencentMapKey: process.env.tencentMapKey,
+	tencentMapKey: process.env.tencent_Map_Key || process.env.tencentMapKey,
 	accessKey: process.env.accessKey,
 	secretKey: process.env.secretKey,
 	appid: process.env.appid,
